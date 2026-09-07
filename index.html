@@ -1238,7 +1238,13 @@
     if(syncPollTimer) clearInterval(syncPollTimer);
     syncPollTimer = setInterval(pollCloud, 4000);
     document.addEventListener("visibilitychange", function(){
-      if(!document.hidden) pollCloud();
+      if(!document.hidden){
+        pollCloud();
+        setTimeout(checkShortcutScanResult, 350);
+      }
+    });
+    window.addEventListener("focus", function(){
+      setTimeout(checkShortcutScanResult, 350);
     });
   }
 
@@ -1647,60 +1653,91 @@
     return '';
   }
 
-  function launchNativeBarcodeShortcut(){
+  async function writeShortcutScanValue(barcode){
+    await apiRequest('duofit_plans?on_conflict=app_key,profile', {
+      method:'POST',
+      headers:{'Prefer':'resolution=merge-duplicates,return=minimal'},
+      body:JSON.stringify({
+        app_key:SYNC_APP_KEY,
+        profile:SHORTCUT_SCAN_PROFILE,
+        data:{ barcode:String(barcode || '') },
+        updated_at:new Date().toISOString()
+      })
+    });
+  }
+
+  async function readShortcutScanValue(){
+    var path = 'duofit_plans?select=data' +
+      '&app_key=eq.' + encoded(SYNC_APP_KEY) +
+      '&profile=eq.' + encoded(SHORTCUT_SCAN_PROFILE) +
+      '&limit=1';
+    var rows = await apiRequest(path, {method:'GET'});
+    if(!rows || !rows.length || !rows[0].data) return '';
+    return barcodeFromShortcutResult(rows[0].data.barcode || '');
+  }
+
+  async function launchNativeBarcodeShortcut(){
     if(!foodSearchContext){
       showToast('Bitte zuerst eine Mahlzeit auswählen');
       return;
     }
 
-    var baseUrl = window.location.origin + window.location.pathname;
-    var successUrl = baseUrl + '?fromShortcut=1' +
-      '&day=' + encodeURIComponent(foodSearchContext.day) +
-      '&meal=' + encodeURIComponent(foodSearchContext.meal);
+    if(!syncReady){
+      setBarcodeStatus('Cloud-Verbindung ist noch nicht bereit. Bitte kurz warten und erneut versuchen.', true);
+      return;
+    }
 
-    var cancelUrl = baseUrl;
-    var shortcutUrl = 'shortcuts://x-callback-url/run-shortcut' +
-      '?name=' + encodeURIComponent('Gym Barcode') +
-      '&x-success=' + encodeURIComponent(successUrl) +
-      '&x-cancel=' + encodeURIComponent(cancelUrl) +
-      '&x-error=' + encodeURIComponent(cancelUrl);
+    try{
+      localStorage.setItem(SHORTCUT_SCAN_CONTEXT_KEY, JSON.stringify({
+        day:foodSearchContext.day,
+        meal:foodSearchContext.meal
+      }));
+      localStorage.setItem(SHORTCUT_SCAN_WAITING_KEY, '1');
 
-    setBarcodeStatus('iPhone-Scanner wird geöffnet …', false);
-    window.location.href = shortcutUrl;
+      // Clear the previous barcode so an old scan can never be picked up accidentally.
+      await writeShortcutScanValue('');
+
+      setBarcodeStatus('iPhone-Scanner wird geöffnet. Nach dem Scan wieder auf das App-Icon tippen.', false);
+      window.location.href = 'shortcuts://run-shortcut?name=' + encodeURIComponent('Gym Barcode');
+    }catch(err){
+      console.error('Could not prepare native barcode scan', err);
+      localStorage.removeItem(SHORTCUT_SCAN_WAITING_KEY);
+      setBarcodeStatus('Scan konnte nicht vorbereitet werden: ' + formatCloudError(err), true);
+    }
   }
 
-  async function handleNativeBarcodeCallback(){
+  async function checkShortcutScanResult(){
+    if(localStorage.getItem(SHORTCUT_SCAN_WAITING_KEY) !== '1') return;
+    if(!syncReady) return;
+
+    var ctx;
+    try{ ctx = JSON.parse(localStorage.getItem(SHORTCUT_SCAN_CONTEXT_KEY) || '{}'); }
+    catch(e){ ctx = {}; }
+
+    if(!ctx.day || !ctx.meal){
+      localStorage.removeItem(SHORTCUT_SCAN_WAITING_KEY);
+      localStorage.removeItem(SHORTCUT_SCAN_CONTEXT_KEY);
+      return;
+    }
+
     try{
-      var params = new URLSearchParams(window.location.search);
-      if(params.get('fromShortcut') !== '1') return;
-
-      var day = params.get('day');
-      var meal = params.get('meal');
-      var result = params.get('result') || params.get('barcode') || '';
-      var code = barcodeFromShortcutResult(result);
-
-      // Clean URL immediately so refresh does not scan again.
-      try{ window.history.replaceState({}, document.title, window.location.pathname); }catch(e){}
-
-      if(!day || !meal){
-        showToast('Scan-Ziel konnte nicht ermittelt werden');
-        return;
-      }
-
-      openFoodSearch(day, meal);
-      showBarcodePanel(false);
-
+      var code = await readShortcutScanValue();
       if(!code){
-        setBarcodeStatus('Kein gültiger Barcode vom iPhone-Scanner erhalten. Du kannst ihn unten manuell eingeben.', true);
+        setBarcodeStatus('Noch kein Barcode empfangen. Nach dem Scan wieder auf das App-Icon tippen.', false);
         return;
       }
 
+      localStorage.removeItem(SHORTCUT_SCAN_WAITING_KEY);
+      localStorage.removeItem(SHORTCUT_SCAN_CONTEXT_KEY);
+
+      openFoodSearch(ctx.day, ctx.meal);
+      showBarcodePanel(false);
       document.getElementById('barcodeInput').value = code;
       setBarcodeStatus('Barcode erkannt: ' + code, false);
       await lookupBarcode(code);
     }catch(err){
-      console.error('Native barcode callback failed', err);
-      showToast('Barcode konnte nicht übernommen werden');
+      console.error('Shortcut barcode fetch failed', err);
+      setBarcodeStatus('Barcode konnte noch nicht aus der Cloud geladen werden. Bitte App kurz erneut öffnen.', true);
     }
   }
 
@@ -2442,7 +2479,7 @@
 
   render();
   initCloudSync();
-  handleNativeBarcodeCallback();
+  setTimeout(checkShortcutScanResult, 700);
 })();
 </script>
 </body>
