@@ -597,7 +597,7 @@
 
 
 
-  /* ---------- Barcode Scanner ---------- */
+  /* ---------- Strichcode Scanner ---------- */
   .food-mode-row{
     display:grid;
     grid-template-columns:1fr 1fr;
@@ -768,6 +768,36 @@
     cursor:pointer;
   }
 
+
+  .manual-product-btn{
+    width:100%;
+    margin:10px 0 4px;
+    border:1px solid rgba(98,224,184,.28);
+    background:rgba(98,224,184,.08);
+    color:#8fe7c8;
+    border-radius:13px;
+    padding:12px 14px;
+    font-size:13px;
+    font-weight:700;
+    cursor:pointer;
+  }
+  .manual-kcal-preview{
+    margin-top:12px;
+    padding:11px 12px;
+    border-radius:12px;
+    background:rgba(255,255,255,.045);
+    border:1px solid var(--line);
+    color:var(--ink);
+    font-size:13px;
+    font-weight:700;
+  }
+  .manual-form-actions{
+    display:flex;
+    gap:8px;
+    margin-top:12px;
+  }
+  .manual-form-actions > button{flex:1;}
+
 </style>
 </head>
 <body class="app-locked">
@@ -870,37 +900,42 @@
       <h3 id="foodModalTitle">Lebensmittel suchen</h3>
       <button type="button" class="food-close" id="foodClose" aria-label="Schließen">×</button>
     </div>
+
     <form class="food-search-form" id="foodSearchForm">
       <input id="foodSearchInput" type="search" placeholder="z. B. Skyr, Reis, Proteinriegel" autocomplete="off" required>
       <button type="submit">Suchen</button>
     </form>
-    <div class="food-mode-row" id="foodModeRow">
-      <button type="button" class="barcode-btn" id="barcodeScanBtn">📱 iPhone Barcode-Scanner</button>
-      <button type="button" class="barcode-btn secondary" id="barcodeManualBtn">Barcode eingeben</button>
-    </div>
-    <div class="barcode-panel" id="barcodePanel">
-      <div id="barcodeReader"></div>
-      <div class="barcode-status" id="barcodeStatus">Der iPhone-Kurzbefehl scannt den Barcode und gibt ihn automatisch an die App zurück.</div>
-      <form class="barcode-manual-form" id="barcodeManualForm">
-        <input id="barcodeInput" inputmode="numeric" autocomplete="off" placeholder="EAN / Barcode eingeben">
-        <button type="submit">Prüfen</button>
-      </form>
-    </div>
+
+    <button type="button" class="manual-product-btn" id="manualProductBtn">+ Produkt manuell hinzufügen</button>
+
     <form class="custom-food-form" id="customFoodForm">
-      <h4>Produkt nicht gefunden</h4>
-      <p>Trag die Werte einmal pro 100 g ein. Der Barcode wird gespeichert und beim nächsten Scan automatisch erkannt.</p>
+      <h4>Produkt manuell hinzufügen</h4>
+      <p>Trag die Nährwerte pro 100 g ein. Kalorien werden automatisch aus Eiweiß, Kohlenhydraten und Fett berechnet.</p>
       <div class="custom-food-grid">
-        <label class="full">Produktname<input id="customFoodName" required placeholder="z. B. Protein Pudding"></label>
-        <label class="full">Marke (optional)<input id="customFoodBrand" placeholder="Marke"></label>
-        <label>kcal / 100 g<input id="customFoodKcal" type="number" inputmode="decimal" min="0" step="0.1" required></label>
-        <label>Eiweiß / 100 g<input id="customFoodProtein" type="number" inputmode="decimal" min="0" step="0.1" value="0"></label>
-        <label>KH / 100 g<input id="customFoodCarbs" type="number" inputmode="decimal" min="0" step="0.1" value="0"></label>
-        <label>Fett / 100 g<input id="customFoodFat" type="number" inputmode="decimal" min="0" step="0.1" value="0"></label>
+        <label class="full">Produktname
+          <input id="customFoodName" required placeholder="z. B. Protein Pudding">
+        </label>
+        <label>Eiweiß / 100 g
+          <input id="customFoodProtein" type="number" inputmode="decimal" min="0" step="0.1" value="0" required>
+        </label>
+        <label>KH / 100 g
+          <input id="customFoodCarbs" type="number" inputmode="decimal" min="0" step="0.1" value="0" required>
+        </label>
+        <label>Fett / 100 g
+          <input id="customFoodFat" type="number" inputmode="decimal" min="0" step="0.1" value="0" required>
+        </label>
       </div>
-      <button class="custom-save" type="submit">Produkt speichern</button>
+      <div class="manual-kcal-preview" id="manualKcalPreview">0 kcal / 100 g</div>
+      <div class="manual-form-actions">
+        <button class="food-back" type="button" id="manualFoodCancel">Abbrechen</button>
+        <button class="custom-save" type="submit">Produkt speichern</button>
+      </div>
     </form>
+
     <p class="food-help">Wähle ein Produkt aus, gib die gegessene Menge in Gramm ein und die App berechnet Kalorien und Makros automatisch.</p>
+
     <div class="food-results" id="foodResults"></div>
+
     <div class="food-selected" id="foodSelected">
       <h4 id="selectedFoodName"></h4>
       <div class="brand" id="selectedFoodBrand"></div>
@@ -917,7 +952,6 @@
     </div>
   </div>
 </div>
-
 
 
 <script>
@@ -1238,13 +1272,7 @@
     if(syncPollTimer) clearInterval(syncPollTimer);
     syncPollTimer = setInterval(pollCloud, 4000);
     document.addEventListener("visibilitychange", function(){
-      if(!document.hidden){
-        pollCloud();
-        setTimeout(checkShortcutScanResult, 350);
-      }
-    });
-    window.addEventListener("focus", function(){
-      setTimeout(checkShortcutScanResult, 350);
+      if(!document.hidden) pollCloud();
     });
   }
 
@@ -1343,19 +1371,21 @@
     selectedFood = null;
     document.getElementById('foodResults').innerHTML = '';
     document.getElementById('foodSelected').classList.remove('show');
-    resetBarcodeUI();
+    document.getElementById('customFoodForm').classList.remove('show');
+    document.getElementById('manualProductBtn').style.display = 'block';
     document.getElementById('foodSearchForm').style.display = 'flex';
     document.querySelector('.food-help').style.display = 'block';
+
     var modal = document.getElementById('foodModal');
     modal.classList.add('open');
     modal.setAttribute('aria-hidden','false');
+
     var input = document.getElementById('foodSearchInput');
     input.value = '';
     setTimeout(function(){ input.focus(); }, 80);
   }
 
   function closeFoodSearch(){
-    stopBarcodeScanner();
     var modal = document.getElementById('foodModal');
     modal.classList.remove('open');
     modal.setAttribute('aria-hidden','true');
@@ -1363,478 +1393,18 @@
     selectedFood = null;
   }
 
-
-  function normalizeBarcode(value){
-    return String(value || '').replace(/[^0-9]/g,'').trim();
+  function customProductId(name){
+    var base = String(name || '')
+      .trim()
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g,'')
+      .replace(/[^a-z0-9]+/g,'-')
+      .replace(/^-+|-+$/g,'');
+    return 'manual:' + (base || uid());
   }
 
-
-  function isValidGtin(code){
-    code = normalizeBarcode(code);
-    if([8,12,13,14].indexOf(code.length) === -1) return false;
-    var sum = 0;
-    var weight = 3;
-    for(var i = code.length - 2; i >= 0; i--){
-      sum += Number(code.charAt(i)) * weight;
-      weight = weight === 3 ? 1 : 3;
-    }
-    var check = (10 - (sum % 10)) % 10;
-    return check === Number(code.charAt(code.length - 1));
-  }
-
-  function findValidBarcodeInOcr(textValue){
-    var raw = String(textValue || '');
-    var lines = raw.split(/\r?\n/);
-    var candidates = [];
-
-    lines.forEach(function(line){
-      var digits = normalizeBarcode(line);
-      if(digits) candidates.push(digits);
-    });
-
-    var all = normalizeBarcode(raw);
-    if(all) candidates.push(all);
-
-    var lengths = [13,12,8,14];
-    for(var c = 0; c < candidates.length; c++){
-      var value = candidates[c];
-      if(isValidGtin(value)) return value;
-      for(var l = 0; l < lengths.length; l++){
-        var len = lengths[l];
-        if(value.length < len) continue;
-        for(var i = 0; i <= value.length - len; i++){
-          var part = value.slice(i, i + len);
-          if(isValidGtin(part)) return part;
-        }
-      }
-    }
-    return '';
-  }
-
-  function loadTesseractScript(){
-    if(window.Tesseract) return Promise.resolve(window.Tesseract);
-    if(ocrScriptPromise) return ocrScriptPromise;
-
-    ocrScriptPromise = new Promise(function(resolve, reject){
-      var script = document.createElement('script');
-      script.src = 'https://cdn.jsdelivr.net/npm/tesseract.js@6.0.1/dist/tesseract.min.js';
-      script.async = true;
-      script.onload = function(){
-        if(window.Tesseract) resolve(window.Tesseract);
-        else reject(new Error('Tesseract wurde nicht geladen'));
-      };
-      script.onerror = function(){ reject(new Error('OCR-Bibliothek konnte nicht geladen werden')); };
-      document.head.appendChild(script);
-    });
-    return ocrScriptPromise;
-  }
-
-  async function getOcrWorker(){
-    if(ocrWorkerPromise) return ocrWorkerPromise;
-    ocrWorkerPromise = (async function(){
-      var TesseractLib = await loadTesseractScript();
-      var worker = await TesseractLib.createWorker('eng', 1);
-      await worker.setParameters({
-        tessedit_char_whitelist:'0123456789',
-        tessedit_pageseg_mode:'7'
-      });
-      return worker;
-    })();
-    return ocrWorkerPromise;
-  }
-
-  function captureBarcodeDigitsCanvas(thresholded){
-    if(!barcodeVideo || !barcodeVideo.videoWidth || !barcodeVideo.videoHeight) return null;
-
-    var vw = barcodeVideo.videoWidth;
-    var vh = barcodeVideo.videoHeight;
-
-    // Untere Hälfte des grünen Scanbereichs: dort stehen normalerweise die EAN-Ziffern.
-    var sx = Math.floor(vw * 0.08);
-    var sw = Math.floor(vw * 0.84);
-    var sy = Math.floor(vh * 0.50);
-    var sh = Math.floor(vh * 0.18);
-
-    var targetWidth = 1500;
-    var scale = targetWidth / sw;
-    var canvas = document.createElement('canvas');
-    canvas.width = targetWidth;
-    canvas.height = Math.max(160, Math.floor(sh * scale));
-    var ctx = canvas.getContext('2d', {willReadFrequently:true});
-    ctx.imageSmoothingEnabled = true;
-    ctx.drawImage(barcodeVideo, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
-
-    if(thresholded){
-      var img = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      var d = img.data;
-      for(var i = 0; i < d.length; i += 4){
-        var gray = Math.round(d[i] * .299 + d[i+1] * .587 + d[i+2] * .114);
-        // Boost contrast around the dark printed digits.
-        var v = gray < 155 ? 0 : 255;
-        d[i] = d[i+1] = d[i+2] = v;
-      }
-      ctx.putImageData(img, 0, 0);
-    }
-    return canvas;
-  }
-
-  async function tryOcrBarcodeDigits(){
-    if(ocrScanBusy || barcodeScanLocked || !barcodeStream) return '';
-    var now = Date.now();
-    if(now - ocrLastAttempt < 1500) return '';
-    ocrLastAttempt = now;
-    ocrScanBusy = true;
-
-    try{
-      setBarcodeStatus('Barcode wird geprüft – zusätzlich lese ich die Zahlen darunter …', false);
-      var worker = await getOcrWorker();
-
-      var canvas = captureBarcodeDigitsCanvas(false);
-      if(!canvas) return '';
-      var result = await worker.recognize(canvas);
-      var code = findValidBarcodeInOcr(result && result.data ? result.data.text : '');
-
-      if(!code){
-        var bwCanvas = captureBarcodeDigitsCanvas(true);
-        if(bwCanvas){
-          result = await worker.recognize(bwCanvas);
-          code = findValidBarcodeInOcr(result && result.data ? result.data.text : '');
-        }
-      }
-      return code || '';
-    }catch(err){
-      console.warn('OCR barcode digits failed', err);
-      return '';
-    }finally{
-      ocrScanBusy = false;
-    }
-  }
-
-  function setBarcodeStatus(msg, isError){
-    var el = document.getElementById('barcodeStatus');
-    if(!el) return;
-    el.textContent = msg;
-    el.style.color = isError ? '#ffaaa3' : 'var(--ink-soft)';
-  }
-
-  function resetBarcodeUI(){
-    pendingBarcode = '';
-    barcodeScanLocked = false;
-    var panel = document.getElementById('barcodePanel');
-    var custom = document.getElementById('customFoodForm');
-    if(panel) panel.classList.remove('show');
-    if(custom) custom.classList.remove('show');
-    var inp = document.getElementById('barcodeInput');
-    if(inp) inp.value = '';
-    setBarcodeStatus('iPhone-Scanner starten oder Barcode unten manuell eingeben.', false);
-  }
-
-  function showBarcodePanel(manualOnly){
-    selectedFood = null;
-    document.getElementById('foodSelected').classList.remove('show');
-    document.getElementById('customFoodForm').classList.remove('show');
-    document.getElementById('foodResults').innerHTML = '';
-    document.getElementById('foodSearchForm').style.display = 'none';
-    document.querySelector('.food-help').style.display = 'none';
-    document.getElementById('barcodePanel').classList.add('show');
-    if(manualOnly){
-      setBarcodeStatus('Barcode eingeben und auf „Prüfen“ tippen.', false);
-      setTimeout(function(){ document.getElementById('barcodeInput').focus(); }, 60);
-    }
-  }
-
-  async function loadZbarModule(){
-    if(!zbarModulePromise){
-      zbarModulePromise = import('https://cdn.jsdelivr.net/npm/@undecaf/zbar-wasm@0.11.0/dist/index.js');
-    }
-    return zbarModulePromise;
-  }
-
-  function chooseDetectedBarcode(symbols){
-    if(!symbols || !symbols.length) return '';
-
-    var preferred = [];
-    var fallback = [];
-    symbols.forEach(function(symbol){
-      try{
-        var value = normalizeBarcode(symbol.decode ? symbol.decode() : '');
-        var type = String(symbol.typeName || symbol.type || '').toUpperCase();
-        if(!/^\d{8,14}$/.test(value)) return;
-        if(type.indexOf('EAN') !== -1 || type.indexOf('UPC') !== -1){
-          preferred.push(value);
-        }else{
-          fallback.push(value);
-        }
-      }catch(e){}
-    });
-
-    return preferred[0] || fallback[0] || '';
-  }
-
-  function captureBarcodeFrame(cropOnly){
-    if(!barcodeVideo || !barcodeCanvas || !barcodeVideo.videoWidth || !barcodeVideo.videoHeight) return null;
-
-    var vw = barcodeVideo.videoWidth;
-    var vh = barcodeVideo.videoHeight;
-    var sx = 0, sy = 0, sw = vw, sh = vh;
-
-    if(cropOnly){
-      sw = Math.floor(vw * 0.92);
-      sh = Math.floor(vh * 0.42);
-      sx = Math.floor((vw - sw) / 2);
-      sy = Math.floor((vh - sh) / 2);
-    }
-
-    var maxWidth = 1280;
-    var scale = Math.min(1, maxWidth / sw);
-    var cw = Math.max(1, Math.floor(sw * scale));
-    var ch = Math.max(1, Math.floor(sh * scale));
-
-    barcodeCanvas.width = cw;
-    barcodeCanvas.height = ch;
-    var ctx = barcodeCanvas.getContext('2d', {willReadFrequently:true});
-    ctx.drawImage(barcodeVideo, sx, sy, sw, sh, 0, 0, cw, ch);
-    return ctx.getImageData(0, 0, cw, ch);
-  }
-
-  async function scanCurrentBarcodeFrame(){
-    if(barcodeScanLocked || barcodeScanBusy || !barcodeStream) return;
-    barcodeScanBusy = true;
-
-    try{
-      var zbar = await loadZbarModule();
-
-      // First scan the highlighted center strip. It is faster and avoids background clutter.
-      var imageData = captureBarcodeFrame(true);
-      var symbols = imageData ? await zbar.scanImageData(imageData) : [];
-      var code = chooseDetectedBarcode(symbols);
-
-      // Every few attempts, also scan the complete camera frame as a fallback.
-      scanCurrentBarcodeFrame._count = (scanCurrentBarcodeFrame._count || 0) + 1;
-      if(!code && scanCurrentBarcodeFrame._count % 4 === 0){
-        imageData = captureBarcodeFrame(false);
-        symbols = imageData ? await zbar.scanImageData(imageData) : [];
-        code = chooseDetectedBarcode(symbols);
-      }
-
-      // If the bars are not readable, OCR the printed EAN/UPC digits underneath.
-      if(!code && scanCurrentBarcodeFrame._count >= 3){
-        code = await tryOcrBarcodeDigits();
-      }
-
-      if(code && !barcodeScanLocked){
-        barcodeScanLocked = true;
-        if(navigator.vibrate){ try{ navigator.vibrate(80); }catch(e){} }
-        setBarcodeStatus('Barcode erkannt: ' + code, false);
-        await stopBarcodeScanner(true);
-        await lookupBarcode(code);
-        return;
-      }
-    }catch(err){
-      console.error('ZBar scan failed', err);
-      setBarcodeStatus('Barcode-Erkennung läuft nicht korrekt. Du kannst den Barcode unten manuell eingeben.', true);
-    }finally{
-      barcodeScanBusy = false;
-    }
-
-    if(barcodeStream && !barcodeScanLocked){
-      barcodeLoopTimer = setTimeout(scanCurrentBarcodeFrame, 180);
-    }
-  }
-
-  function barcodeFromShortcutResult(value){
-    var raw = String(value || '');
-    var matches = raw.match(/\d{8,14}/g) || [];
-    for(var i=0;i<matches.length;i++){
-      if(isValidGtin(matches[i])) return matches[i];
-    }
-    var normalized = normalizeBarcode(raw);
-    if(/^\d{8,14}$/.test(normalized)) return normalized;
-    return '';
-  }
-
-  async function writeShortcutScanValue(barcode){
-    await apiRequest('duofit_plans?on_conflict=app_key,profile', {
-      method:'POST',
-      headers:{'Prefer':'resolution=merge-duplicates,return=minimal'},
-      body:JSON.stringify({
-        app_key:SYNC_APP_KEY,
-        profile:SHORTCUT_SCAN_PROFILE,
-        data:{ barcode:String(barcode || '') },
-        updated_at:new Date().toISOString()
-      })
-    });
-  }
-
-  async function readShortcutScanValue(){
-    var path = 'duofit_plans?select=data' +
-      '&app_key=eq.' + encoded(SYNC_APP_KEY) +
-      '&profile=eq.' + encoded(SHORTCUT_SCAN_PROFILE) +
-      '&limit=1';
-    var rows = await apiRequest(path, {method:'GET'});
-    if(!rows || !rows.length || !rows[0].data) return '';
-    return barcodeFromShortcutResult(rows[0].data.barcode || '');
-  }
-
-  async function launchNativeBarcodeShortcut(){
-    if(!foodSearchContext){
-      showToast('Bitte zuerst eine Mahlzeit auswählen');
-      return;
-    }
-
-    if(!syncReady){
-      setBarcodeStatus('Cloud-Verbindung ist noch nicht bereit. Bitte kurz warten und erneut versuchen.', true);
-      return;
-    }
-
-    try{
-      localStorage.setItem(SHORTCUT_SCAN_CONTEXT_KEY, JSON.stringify({
-        day:foodSearchContext.day,
-        meal:foodSearchContext.meal
-      }));
-      localStorage.setItem(SHORTCUT_SCAN_WAITING_KEY, '1');
-
-      // Clear the previous barcode so an old scan can never be picked up accidentally.
-      await writeShortcutScanValue('');
-
-      setBarcodeStatus('iPhone-Scanner wird geöffnet. Nach dem Scan wieder auf das App-Icon tippen.', false);
-      window.location.href = 'shortcuts://run-shortcut?name=' + encodeURIComponent('Gym Barcode');
-    }catch(err){
-      console.error('Could not prepare native barcode scan', err);
-      localStorage.removeItem(SHORTCUT_SCAN_WAITING_KEY);
-      setBarcodeStatus('Scan konnte nicht vorbereitet werden: ' + formatCloudError(err), true);
-    }
-  }
-
-  async function checkShortcutScanResult(){
-    if(localStorage.getItem(SHORTCUT_SCAN_WAITING_KEY) !== '1') return;
-    if(!syncReady) return;
-
-    var ctx;
-    try{ ctx = JSON.parse(localStorage.getItem(SHORTCUT_SCAN_CONTEXT_KEY) || '{}'); }
-    catch(e){ ctx = {}; }
-
-    if(!ctx.day || !ctx.meal){
-      localStorage.removeItem(SHORTCUT_SCAN_WAITING_KEY);
-      localStorage.removeItem(SHORTCUT_SCAN_CONTEXT_KEY);
-      return;
-    }
-
-    try{
-      var code = await readShortcutScanValue();
-      if(!code){
-        setBarcodeStatus('Noch kein Barcode empfangen. Nach dem Scan wieder auf das App-Icon tippen.', false);
-        return;
-      }
-
-      localStorage.removeItem(SHORTCUT_SCAN_WAITING_KEY);
-      localStorage.removeItem(SHORTCUT_SCAN_CONTEXT_KEY);
-
-      openFoodSearch(ctx.day, ctx.meal);
-      showBarcodePanel(false);
-      document.getElementById('barcodeInput').value = code;
-      setBarcodeStatus('Barcode erkannt: ' + code, false);
-      await lookupBarcode(code);
-    }catch(err){
-      console.error('Shortcut barcode fetch failed', err);
-      setBarcodeStatus('Barcode konnte noch nicht aus der Cloud geladen werden. Bitte App kurz erneut öffnen.', true);
-    }
-  }
-
-  async function startBarcodeScanner(){
-    showBarcodePanel(false);
-    await stopBarcodeScanner();
-
-    if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
-      setBarcodeStatus('Kamera ist in diesem Browser nicht verfügbar. Du kannst den Barcode unten manuell eingeben.', true);
-      return;
-    }
-
-    try{
-      barcodeScanLocked = false;
-      barcodeScanBusy = false;
-      ocrLastAttempt = 0;
-      setBarcodeStatus('Scanner wird geladen und die Kamera gestartet …', false);
-
-      // Preload WASM before opening the stream so failures are visible immediately.
-      await loadZbarModule();
-
-      var constraints = {
-        audio:false,
-        video:{
-          facingMode:{ideal:'environment'},
-          width:{ideal:1920},
-          height:{ideal:1080},
-          frameRate:{ideal:30, max:30}
-        }
-      };
-
-      barcodeStream = await navigator.mediaDevices.getUserMedia(constraints);
-      barcodeScanner = 'zbar-wasm';
-
-      var reader = document.getElementById('barcodeReader');
-      reader.innerHTML = '';
-
-      barcodeVideo = document.createElement('video');
-      barcodeVideo.className = 'zbar-video';
-      barcodeVideo.setAttribute('playsinline', '');
-      barcodeVideo.setAttribute('autoplay', '');
-      barcodeVideo.setAttribute('muted', '');
-      barcodeVideo.muted = true;
-      barcodeVideo.srcObject = barcodeStream;
-
-      var guide = document.createElement('div');
-      guide.className = 'zbar-guide';
-      var badge = document.createElement('div');
-      badge.className = 'zbar-badge';
-      badge.textContent = 'EAN / UPC · Balken + Zahlen';
-
-      reader.appendChild(barcodeVideo);
-      reader.appendChild(guide);
-      reader.appendChild(badge);
-
-      barcodeCanvas = document.createElement('canvas');
-
-      await barcodeVideo.play();
-
-      // Give autofocus a brief moment to settle before the first decode.
-      setBarcodeStatus('Barcode groß in den Rahmen halten. Die App prüft Balken und die Zahlen darunter.', false);
-      barcodeLoopTimer = setTimeout(scanCurrentBarcodeFrame, 500);
-    }catch(err){
-      console.error('ZBar camera failed', err);
-      await stopBarcodeScanner();
-      var msg = (err && err.name === 'NotAllowedError')
-        ? 'Kamerazugriff wurde nicht erlaubt. Bitte Safari-Kamerazugriff aktivieren oder den Barcode manuell eingeben.'
-        : 'Scanner konnte nicht gestartet werden. Du kannst den Barcode unten manuell eingeben.';
-      setBarcodeStatus(msg, true);
-    }
-  }
-
-  async function stopBarcodeScanner(keepStatus){
-    if(barcodeLoopTimer){
-      clearTimeout(barcodeLoopTimer);
-      barcodeLoopTimer = null;
-    }
-
-    if(barcodeStream){
-      try{
-        barcodeStream.getTracks().forEach(function(track){ track.stop(); });
-      }catch(e){}
-    }
-
-    barcodeStream = null;
-    barcodeScanner = null;
-    barcodeVideo = null;
-    barcodeCanvas = null;
-    barcodeScanBusy = false;
-    ocrScanBusy = false;
-    if(!keepStatus) barcodeScanLocked = false;
-
-    var reader = document.getElementById('barcodeReader');
-    if(reader) reader.innerHTML = '';
-  }
-
-  async function fetchCustomProduct(barcode){
+  async function loadCustomProducts(){
     try{
       var path = 'duofit_plans?select=data' +
         '&app_key=eq.' + encoded(SYNC_APP_KEY) +
@@ -1842,23 +1412,16 @@
         '&limit=1';
       var rows = await apiRequest(path, {method:'GET'});
       var db = rows && rows.length && rows[0].data ? rows[0].data : {};
-      var products = db.products || {};
-      return products[barcode] || null;
+      return db.products && typeof db.products === 'object' ? db.products : {};
     }catch(err){
-      console.error('Custom product lookup failed', err);
-      return null;
+      console.error('Custom products load failed', err);
+      return {};
     }
   }
 
   async function saveCustomProduct(product){
-    var path = 'duofit_plans?select=data' +
-      '&app_key=eq.' + encoded(SYNC_APP_KEY) +
-      '&profile=eq.' + encoded(CUSTOM_PRODUCTS_PROFILE) +
-      '&limit=1';
-    var rows = await apiRequest(path, {method:'GET'});
-    var db = rows && rows.length && rows[0].data ? rows[0].data : {products:{}};
-    if(!db.products || typeof db.products !== 'object') db.products = {};
-    db.products[product.code] = product;
+    var products = await loadCustomProducts();
+    products[product.id] = product;
 
     await apiRequest('duofit_plans?on_conflict=app_key,profile', {
       method:'POST',
@@ -1866,109 +1429,100 @@
       body:JSON.stringify({
         app_key:SYNC_APP_KEY,
         profile:CUSTOM_PRODUCTS_PROFILE,
-        data:db,
+        data:{products:products},
         updated_at:new Date().toISOString()
       })
     });
   }
 
-  function customProductToSelected(product){
-    selectedFood = {
-      code: product.code || '',
-      name: product.name || 'Produkt',
-      brand: product.brand || '',
-      kcal100: numberOrZero(product.kcal100),
-      protein100: numberOrZero(product.protein100),
-      carbs100: numberOrZero(product.carbs100),
-      fat100: numberOrZero(product.fat100),
-      source: 'custom'
+  function customProductToSearchProduct(product){
+    return {
+      __custom:true,
+      code:'',
+      product_name_de:product.name || 'Produkt',
+      product_name:product.name || 'Produkt',
+      brands:'',
+      nutriments:{
+        'energy-kcal_100g':numberOrZero(product.kcal100),
+        'proteins_100g':numberOrZero(product.protein100),
+        'carbohydrates_100g':numberOrZero(product.carbs100),
+        'fat_100g':numberOrZero(product.fat100)
+      }
     };
-    showSelectedFood();
   }
 
-  function showSelectedFood(){
-    document.getElementById('selectedFoodName').textContent = selectedFood.name;
-    document.getElementById('selectedFoodBrand').textContent = selectedFood.brand;
-    document.getElementById('foodAmount').value = '100';
+  function showManualProductForm(){
+    selectedFood = null;
+    document.getElementById('foodSelected').classList.remove('show');
     document.getElementById('foodResults').innerHTML = '';
     document.getElementById('foodSearchForm').style.display = 'none';
+    document.getElementById('manualProductBtn').style.display = 'none';
     document.querySelector('.food-help').style.display = 'none';
-    document.getElementById('barcodePanel').classList.remove('show');
-    document.getElementById('customFoodForm').classList.remove('show');
-    document.getElementById('foodSelected').classList.add('show');
-    updateSelectedPreview();
-  }
 
-  async function lookupBarcode(rawCode){
-    var code = normalizeBarcode(rawCode);
-    if(!code){
-      setBarcodeStatus('Bitte einen gültigen Barcode eingeben.', true);
-      return;
-    }
-    pendingBarcode = code;
-    document.getElementById('barcodeInput').value = code;
-    setBarcodeStatus('Produkt ' + code + ' wird gesucht …', false);
-
-    var custom = await fetchCustomProduct(code);
-    if(custom){
-      setBarcodeStatus('Gespeichertes Produkt gefunden.', false);
-      customProductToSelected(custom);
-      return;
-    }
-
-    try{
-      var url = 'https://world.openfoodfacts.org/api/v2/product/' + encodeURIComponent(code) +
-        '.json?fields=code,product_name,product_name_de,brands,nutriments,quantity';
-      var response = await fetch(url, {headers:{'Accept':'application/json'}});
-      if(response.ok){
-        var payload = await response.json();
-        var product = payload && payload.product;
-        var n = product && product.nutriments ? product.nutriments : {};
-        var kcal = nutrimentValue(n,['energy-kcal_100g','energy-kcal']);
-        if(payload.status === 1 && product && (product.product_name_de || product.product_name) && kcal >= 0){
-          selectFood(product);
-          return;
-        }
-      }
-    }catch(err){
-      console.error('Open Food Facts barcode lookup failed', err);
-    }
-
-    showCustomProductForm(code);
-  }
-
-  function showCustomProductForm(code){
-    pendingBarcode = code;
-    document.getElementById('barcodePanel').classList.remove('show');
     var form = document.getElementById('customFoodForm');
     form.classList.add('show');
     document.getElementById('customFoodName').value = '';
-    document.getElementById('customFoodBrand').value = '';
-    document.getElementById('customFoodKcal').value = '';
     document.getElementById('customFoodProtein').value = '0';
     document.getElementById('customFoodCarbs').value = '0';
     document.getElementById('customFoodFat').value = '0';
+    updateManualKcalPreview();
     setTimeout(function(){ document.getElementById('customFoodName').focus(); }, 60);
   }
 
-  async function saveManualBarcodeProduct(){
-    var product = {
-      code: pendingBarcode,
-      name: document.getElementById('customFoodName').value.trim(),
-      brand: document.getElementById('customFoodBrand').value.trim(),
-      kcal100: numberOrZero(document.getElementById('customFoodKcal').value),
-      protein100: numberOrZero(document.getElementById('customFoodProtein').value),
-      carbs100: numberOrZero(document.getElementById('customFoodCarbs').value),
-      fat100: numberOrZero(document.getElementById('customFoodFat').value)
-    };
-    if(!product.code || !product.name){
-      showToast('Barcode und Produktname fehlen');
+  function hideManualProductForm(){
+    document.getElementById('customFoodForm').classList.remove('show');
+    document.getElementById('foodSearchForm').style.display = 'flex';
+    document.getElementById('manualProductBtn').style.display = 'block';
+    document.querySelector('.food-help').style.display = 'block';
+    setTimeout(function(){ document.getElementById('foodSearchInput').focus(); }, 50);
+  }
+
+  function calculatedKcal100(){
+    var protein = numberOrZero(document.getElementById('customFoodProtein').value);
+    var carbs = numberOrZero(document.getElementById('customFoodCarbs').value);
+    var fat = numberOrZero(document.getElementById('customFoodFat').value);
+    return round1((protein * 4) + (carbs * 4) + (fat * 9));
+  }
+
+  function updateManualKcalPreview(){
+    var el = document.getElementById('manualKcalPreview');
+    if(el) el.textContent = formatMacro(calculatedKcal100()) + ' kcal / 100 g';
+  }
+
+  async function saveManualProduct(){
+    var name = document.getElementById('customFoodName').value.trim();
+    if(!name){
+      showToast('Bitte Produktname eingeben');
       return;
     }
+
+    var protein = numberOrZero(document.getElementById('customFoodProtein').value);
+    var carbs = numberOrZero(document.getElementById('customFoodCarbs').value);
+    var fat = numberOrZero(document.getElementById('customFoodFat').value);
+
+    var product = {
+      id:customProductId(name),
+      name:name,
+      kcal100:round1((protein * 4) + (carbs * 4) + (fat * 9)),
+      protein100:round1(protein),
+      carbs100:round1(carbs),
+      fat100:round1(fat)
+    };
+
     try{
       await saveCustomProduct(product);
-      showToast('Produkt für nächsten Scan gespeichert');
-      customProductToSelected(product);
+      showToast('Produkt gespeichert');
+      selectedFood = {
+        code:'',
+        name:product.name,
+        brand:'Eigener Eintrag',
+        kcal100:product.kcal100,
+        protein100:product.protein100,
+        carbs100:product.carbs100,
+        fat100:product.fat100,
+        source:'custom'
+      };
+      showSelectedFood();
     }catch(err){
       console.error('Save manual product failed', err);
       showToast('Produkt konnte nicht gespeichert werden');
@@ -1986,58 +1540,89 @@
   async function searchFoods(query){
     var results = document.getElementById('foodResults');
     results.innerHTML = '<div class="food-empty">Suche läuft …</div>';
-    var url = 'https://world.openfoodfacts.org/cgi/search.pl?' +
-      'search_terms=' + encodeURIComponent(query) +
-      '&search_simple=1&action=process&json=1&page_size=12' +
-      '&fields=code,product_name,product_name_de,brands,nutriments,quantity';
-    try{
-      var response = await fetch(url, {headers:{'Accept':'application/json'}});
-      if(!response.ok) throw new Error('HTTP ' + response.status);
-      var payload = await response.json();
-      var products = (payload.products || []).filter(function(p){
-        var n = p.nutriments || {};
-        var kcal = nutrimentValue(n,['energy-kcal_100g','energy-kcal']);
-        return (p.product_name_de || p.product_name) && kcal > 0;
-      }).slice(0,10);
 
-      if(!products.length){
-        results.innerHTML = '<div class="food-empty">Keine passenden Produkte mit Nährwerten gefunden. Du kannst den Eintrag darunter weiterhin manuell anlegen.</div>';
-        return;
+    var qLower = String(query || '').trim().toLowerCase();
+
+    var customPromise = loadCustomProducts().then(function(map){
+      return Object.keys(map).map(function(key){ return map[key]; }).filter(function(p){
+        return p && p.name && p.name.toLowerCase().indexOf(qLower) !== -1;
+      }).map(customProductToSearchProduct);
+    }).catch(function(){ return []; });
+
+    var offPromise = (async function(){
+      var url = 'https://world.openfoodfacts.org/cgi/search.pl?' +
+        'search_terms=' + encodeURIComponent(query) +
+        '&search_simple=1&action=process&json=1&page_size=12' +
+        '&fields=code,product_name,product_name_de,brands,nutriments,quantity';
+
+      try{
+        var response = await fetch(url, {headers:{'Accept':'application/json'}});
+        if(!response.ok) throw new Error('HTTP ' + response.status);
+        var payload = await response.json();
+        return (payload.products || []).filter(function(p){
+          var n = p.nutriments || {};
+          var kcal = nutrimentValue(n,['energy-kcal_100g','energy-kcal']);
+          return (p.product_name_de || p.product_name) && kcal > 0;
+        }).slice(0,10);
+      }catch(err){
+        console.error('Open Food Facts search failed', err);
+        return [];
       }
+    })();
 
-      results.innerHTML = products.map(function(p, idx){
-        var n = p.nutriments || {};
-        var kcal = nutrimentValue(n,['energy-kcal_100g','energy-kcal']);
-        var protein = nutrimentValue(n,['proteins_100g','proteins']);
-        var carbs = nutrimentValue(n,['carbohydrates_100g','carbohydrates']);
-        var fat = nutrimentValue(n,['fat_100g','fat']);
-        var name = p.product_name_de || p.product_name || 'Produkt';
-        var brand = p.brands || p.quantity || '';
-        return '<button type="button" class="food-result" data-food-index="' + idx + '">' +
-          '<div class="food-result-name">' + escapeHtml(name) + '</div>' +
-          (brand ? '<div class="food-result-brand">' + escapeHtml(brand) + '</div>' : '') +
-          '<div class="food-result-macros"><strong>' + formatMacro(kcal) + ' kcal</strong> / 100 g · E ' + formatMacro(protein) + ' g · KH ' + formatMacro(carbs) + ' g · F ' + formatMacro(fat) + ' g</div>' +
-        '</button>';
-      }).join('');
-      results._products = products;
-    }catch(err){
-      results.innerHTML = '<div class="food-empty">Lebensmittelsuche gerade nicht erreichbar. Bitte später erneut versuchen oder den Eintrag manuell anlegen.</div>';
+    var both = await Promise.all([customPromise, offPromise]);
+    var products = both[0].concat(both[1]).slice(0,14);
+
+    if(!products.length){
+      results.innerHTML =
+        '<div class="food-empty">Kein passendes Produkt gefunden. Tippe auf „Produkt manuell hinzufügen“ und speichere es einmal für euch beide.</div>';
+      return;
     }
+
+    results.innerHTML = products.map(function(p, idx){
+      var n = p.nutriments || {};
+      var kcal = nutrimentValue(n,['energy-kcal_100g','energy-kcal']);
+      var protein = nutrimentValue(n,['proteins_100g','proteins']);
+      var carbs = nutrimentValue(n,['carbohydrates_100g','carbohydrates']);
+      var fat = nutrimentValue(n,['fat_100g','fat']);
+      var name = p.product_name_de || p.product_name || 'Produkt';
+      var brand = p.__custom ? 'Eigener Eintrag' : (p.brands || p.quantity || '');
+      return '<button type="button" class="food-result" data-food-index="' + idx + '">' +
+        '<div class="food-result-name">' + escapeHtml(name) + '</div>' +
+        (brand ? '<div class="food-result-brand">' + escapeHtml(brand) + '</div>' : '') +
+        '<div class="food-result-macros"><strong>' + formatMacro(kcal) + ' kcal</strong> / 100 g · E ' +
+        formatMacro(protein) + ' g · KH ' + formatMacro(carbs) + ' g · F ' + formatMacro(fat) + ' g</div>' +
+      '</button>';
+    }).join('');
+    results._products = products;
   }
 
   function selectFood(product){
     var n = product.nutriments || {};
     selectedFood = {
-      code: product.code || pendingBarcode || '',
-      name: product.product_name_de || product.product_name || 'Produkt',
-      brand: product.brands || '',
-      kcal100: nutrimentValue(n,['energy-kcal_100g','energy-kcal']),
-      protein100: nutrimentValue(n,['proteins_100g','proteins']),
-      carbs100: nutrimentValue(n,['carbohydrates_100g','carbohydrates']),
-      fat100: nutrimentValue(n,['fat_100g','fat']),
-      source: 'openfoodfacts'
+      code:'',
+      name:product.product_name_de || product.product_name || 'Produkt',
+      brand:product.__custom ? 'Eigener Eintrag' : (product.brands || ''),
+      kcal100:nutrimentValue(n,['energy-kcal_100g','energy-kcal']),
+      protein100:nutrimentValue(n,['proteins_100g','proteins']),
+      carbs100:nutrimentValue(n,['carbohydrates_100g','carbohydrates']),
+      fat100:nutrimentValue(n,['fat_100g','fat']),
+      source:product.__custom ? 'custom' : 'openfoodfacts'
     };
     showSelectedFood();
+  }
+
+  function showSelectedFood(){
+    document.getElementById('selectedFoodName').textContent = selectedFood.name;
+    document.getElementById('selectedFoodBrand').textContent = selectedFood.brand;
+    document.getElementById('foodAmount').value = '100';
+    document.getElementById('foodResults').innerHTML = '';
+    document.getElementById('foodSearchForm').style.display = 'none';
+    document.getElementById('manualProductBtn').style.display = 'none';
+    document.querySelector('.food-help').style.display = 'none';
+    document.getElementById('customFoodForm').classList.remove('show');
+    document.getElementById('foodSelected').classList.add('show');
+    updateSelectedPreview();
   }
 
   function updateSelectedPreview(){
@@ -2058,18 +1643,20 @@
     var data = currentData();
     var day = data.nutrition.days[foodSearchContext.day];
     if(!day) return;
+
     day.meals[foodSearchContext.meal].push({
-      id: uid(),
-      name: selectedFood.name + (selectedFood.brand ? ' · ' + selectedFood.brand : ''),
-      meta: formatMacro(grams) + ' g',
-      grams: round1(grams),
-      kcal: round1(selectedFood.kcal100 * f),
-      protein: round1(selectedFood.protein100 * f),
-      carbs: round1(selectedFood.carbs100 * f),
-      fat: round1(selectedFood.fat100 * f),
-      source: selectedFood.source || 'openfoodfacts',
-      barcode: selectedFood.code || ''
+      id:uid(),
+      name:selectedFood.name,
+      meta:formatMacro(grams) + ' g',
+      grams:round1(grams),
+      kcal:round1(selectedFood.kcal100 * f),
+      protein:round1(selectedFood.protein100 * f),
+      carbs:round1(selectedFood.carbs100 * f),
+      fat:round1(selectedFood.fat100 * f),
+      source:selectedFood.source || 'custom',
+      barcode:''
     });
+
     saveData(state.profile, data);
     closeFoodSearch();
     render();
@@ -2386,19 +1973,14 @@
 
 
 
-  document.getElementById('barcodeScanBtn').addEventListener('click', launchNativeBarcodeShortcut);
-  document.getElementById('barcodeManualBtn').addEventListener('click', function(){
-    stopBarcodeScanner();
-    showBarcodePanel(true);
-  });
-  document.getElementById('barcodeManualForm').addEventListener('submit', function(e){
-    e.preventDefault();
-    var code = normalizeBarcode(document.getElementById('barcodeInput').value);
-    if(code) lookupBarcode(code);
-  });
+  document.getElementById('manualProductBtn').addEventListener('click', showManualProductForm);
+  document.getElementById('manualFoodCancel').addEventListener('click', hideManualProductForm);
   document.getElementById('customFoodForm').addEventListener('submit', function(e){
     e.preventDefault();
-    saveManualBarcodeProduct();
+    saveManualProduct();
+  });
+  ['customFoodProtein','customFoodCarbs','customFoodFat'].forEach(function(id){
+    document.getElementById(id).addEventListener('input', updateManualKcalPreview);
   });
 
   document.getElementById('foodClose').addEventListener('click', closeFoodSearch);
@@ -2424,7 +2006,8 @@
     document.getElementById('foodSearchForm').style.display = 'flex';
     document.querySelector('.food-help').style.display = 'block';
     document.getElementById('foodResults').innerHTML = '';
-    resetBarcodeUI();
+    document.getElementById('manualProductBtn').style.display = 'block';
+    document.getElementById('customFoodForm').classList.remove('show');
     setTimeout(function(){ document.getElementById('foodSearchInput').focus(); }, 50);
   });
   document.getElementById('foodAdd').addEventListener('click', addSelectedFood);
