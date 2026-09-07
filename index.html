@@ -965,6 +965,158 @@
     border:1px solid rgba(98,224,184,.22);
   }
 
+
+  /* ---------- Trainingshistorie / Satz-Tracking ---------- */
+  .exercise-card{
+    border:1px solid var(--line);
+    background:rgba(255,255,255,.025);
+    border-radius:15px;
+    padding:13px;
+    margin:10px 0;
+  }
+  .exercise-card-head{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    gap:10px;
+    margin-bottom:9px;
+  }
+  .exercise-name{font-weight:800;font-size:14px;}
+  .exercise-history-hint{
+    font-size:10.5px;
+    color:var(--ink-soft);
+    line-height:1.45;
+    margin-top:3px;
+  }
+  .set-count-row{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    margin:8px 0 10px;
+    font-size:11px;
+    color:var(--ink-soft);
+  }
+  .set-count-row input{
+    width:70px;
+    border:1px solid var(--line);
+    background:#0d131c;
+    color:var(--ink);
+    border-radius:9px;
+    padding:8px;
+    text-align:center;
+  }
+  .set-list{display:flex;flex-direction:column;gap:7px;}
+  .set-row{
+    display:grid;
+    grid-template-columns:52px 1fr 1fr 38px;
+    gap:7px;
+    align-items:end;
+    padding:8px;
+    border-radius:11px;
+    background:rgba(255,255,255,.025);
+    border:1px solid rgba(255,255,255,.045);
+  }
+  .set-row.done{
+    border-color:rgba(98,224,184,.26);
+    background:rgba(98,224,184,.055);
+  }
+  .set-number{
+    align-self:center;
+    font-size:11px;
+    font-weight:800;
+    color:var(--ink-soft);
+  }
+  .set-row label{
+    display:flex;
+    flex-direction:column;
+    gap:4px;
+    font-size:9.5px;
+    color:var(--ink-soft);
+  }
+  .set-row input{
+    width:100%;
+    min-width:0;
+    border:1px solid var(--line);
+    background:#0d131c;
+    color:var(--ink);
+    border-radius:9px;
+    padding:8px 7px;
+    font-size:13px;
+    outline:none;
+  }
+  .set-done-btn{
+    width:38px;height:36px;
+    border-radius:9px;
+    border:1px solid var(--line);
+    background:rgba(255,255,255,.035);
+    color:var(--ink-soft);
+    font-weight:900;
+  }
+  .set-row.done .set-done-btn{
+    background:#8fe7c8;
+    color:#07100d;
+    border-color:#8fe7c8;
+  }
+  .training-complete-btn{
+    width:100%;
+    margin-top:12px;
+    border:0;
+    border-radius:12px;
+    padding:12px 14px;
+    background:#8fe7c8;
+    color:#07100d;
+    font-weight:850;
+    font-size:13px;
+  }
+  .training-day-history{
+    margin-top:12px;
+    border-top:1px solid rgba(255,255,255,.06);
+    padding-top:11px;
+  }
+  .training-day-history h4{
+    font-size:11px;
+    color:var(--ink-soft);
+    margin:0 0 7px;
+  }
+  .history-session{
+    display:flex;
+    justify-content:space-between;
+    gap:10px;
+    padding:7px 0;
+    border-top:1px solid rgba(255,255,255,.04);
+    font-size:11px;
+  }
+  .history-session:first-of-type{border-top:0;}
+  .history-session span{color:var(--ink-soft);}
+  .history-session strong{text-align:right;}
+  .exercise-add-form{
+    display:grid;
+    grid-template-columns:minmax(0,1fr) 82px auto;
+    gap:7px;
+    margin-top:12px;
+  }
+  .exercise-add-form input{
+    min-width:0;
+    border:1px solid var(--line);
+    background:#0d131c;
+    color:var(--ink);
+    border-radius:10px;
+    padding:10px;
+  }
+  .exercise-add-form button{
+    border:0;
+    border-radius:10px;
+    padding:10px 12px;
+    background:rgba(98,224,184,.14);
+    color:#91ebc9;
+    font-weight:800;
+  }
+  @media(max-width:390px){
+    .exercise-add-form{grid-template-columns:1fr 74px;}
+    .exercise-add-form button{grid-column:1/-1;}
+    .set-row{grid-template-columns:44px 1fr 1fr 36px;gap:5px;}
+  }
+
 </style>
 </head>
 <body class="app-locked">
@@ -1029,7 +1181,7 @@
             <div class="macro-head"><span>Fett</span><span id="dashFatText">0 / – g</span></div>
             <div class="macro-track"><div class="macro-fill macro-fat" id="dashFatBar"></div></div>
           </div>
-          <button class="dash-action" type="button" data-go="ernaehrung">Ernährung für heute öffnen</button>
+          <button class="dash-action" type="button" id="openTodayNutrition">Ernährung für heute öffnen</button>
         </div>
 
         <div class="dash-card full">
@@ -1340,7 +1492,7 @@
   }
 
   function emptyData(){
-    return { nutrition: { days: emptyNutritionDays() }, training: { days: emptyTrainingDays() }, profileGoal: {}, weightHistory: [] };
+    return { nutrition: { days: emptyNutritionDays() }, training: { days: emptyTrainingDays() }, profileGoal: {}, weightHistory: [], trainingHistory: [] };
   }
 
   function loadData(profile){
@@ -1380,6 +1532,33 @@
       if(!Array.isArray(parsed.weightHistory)){
         parsed.weightHistory = [];
       }
+      if(!Array.isArray(parsed.trainingHistory)){
+        parsed.trainingHistory = [];
+      }
+
+      // Migration älterer Übungseinträge auf einzelne Sätze.
+      DAYS.forEach(function(d){
+        var day = parsed.training.days[d.key];
+        if(!day || !Array.isArray(day.exercises)) return;
+        day.exercises.forEach(function(ex){
+          var count = Math.max(1, Math.min(10, parseInt(ex.sets, 10) || 1));
+          if(!Array.isArray(ex.setDetails)){
+            ex.setDetails = [];
+            for(var i=0;i<count;i++){
+              ex.setDetails.push({
+                reps: ex.reps || "",
+                weight: ex.weight || "",
+                done:false
+              });
+            }
+          }
+          while(ex.setDetails.length < count){
+            ex.setDetails.push({reps:"", weight:"", done:false});
+          }
+          if(ex.setDetails.length > count) ex.setDetails = ex.setDetails.slice(0,count);
+          ex.sets = count;
+        });
+      });
       return parsed;
     }catch(e){
       return emptyData();
@@ -1656,6 +1835,13 @@
     document.getElementById('manualProductBtn').style.display = 'block';
     document.getElementById('foodSearchForm').style.display = 'flex';
     document.querySelector('.food-help').style.display = 'block';
+
+    var title = document.getElementById('foodModalTitle');
+    if(title){
+      title.textContent = dayKey === todayDayKey()
+        ? 'Lebensmittel hinzufügen · Heute'
+        : 'Lebensmittel hinzufügen · ' + ((DAYS.find(function(d){ return d.key === dayKey; }) || {}).label || '');
+    }
 
     var modal = document.getElementById('foodModal');
     modal.classList.add('open');
@@ -1939,9 +2125,15 @@
     });
 
     saveData(state.profile, data);
+    var addedForToday = foodSearchContext.day === todayDayKey();
     closeFoodSearch();
     render();
-    showToast('Lebensmittel hinzugefügt');
+    if(addedForToday){
+      renderDashboard();
+      showToast('Hinzugefügt · Dashboard aktualisiert');
+    }else{
+      showToast('Lebensmittel hinzugefügt');
+    }
   }
 
 
@@ -2090,19 +2282,8 @@
   function todayNutritionTotals(){
     var data = currentData();
     var day = data.nutrition.days[todayDayKey()];
-    var totals = {kcal:0, protein:0, carbs:0, fat:0};
-    if(!day || !day.meals) return totals;
-
-    MEALS.forEach(function(m){
-      var items = Array.isArray(day.meals[m.key]) ? day.meals[m.key] : [];
-      items.forEach(function(item){
-        totals.kcal += numberOrZero(item.kcal);
-        totals.protein += numberOrZero(item.protein);
-        totals.carbs += numberOrZero(item.carbs);
-        totals.fat += numberOrZero(item.fat);
-      });
-    });
-    return totals;
+    if(!day || !day.meals) return {kcal:0, protein:0, carbs:0, fat:0};
+    return dayMacroTotals(day);
   }
 
   function pct(value, target){
@@ -2242,12 +2423,191 @@
     var typeObj = DAY_TYPES.find(function(t){ return t.key === type; });
     var exercises = trainDay && Array.isArray(trainDay.exercises) ? trainDay.exercises.length : 0;
     document.getElementById("dashTraining").textContent = typeObj ? typeObj.label : "Rest Day";
+    var todayKey = (function(){
+      var n = new Date();
+      return n.getFullYear() + "-" + String(n.getMonth()+1).padStart(2,"0") + "-" + String(n.getDate()).padStart(2,"0");
+    })();
+    var completedToday = (data.trainingHistory || []).some(function(s){
+      return s.dayKey === todayDayKey() && s.date === todayKey;
+    });
+
     document.getElementById("dashTrainingSub").textContent =
       type === "rest"
         ? "Heute ist kein Training geplant."
-        : exercises + (exercises === 1 ? " Übung eingetragen." : " Übungen eingetragen.");
+        : completedToday
+          ? "Training heute abgeschlossen ✓"
+          : exercises + (exercises === 1 ? " Übung eingetragen." : " Übungen eingetragen.");
 
     renderWeightHistory();
+  }
+
+
+  function normalizedExerciseName(name){
+    return String(name || "").trim().toLowerCase();
+  }
+
+  function exerciseSetDetails(ex){
+    var count = Math.max(1, Math.min(10, parseInt(ex.sets, 10) || 1));
+    if(!Array.isArray(ex.setDetails)) ex.setDetails = [];
+    while(ex.setDetails.length < count){
+      ex.setDetails.push({reps:"", weight:"", done:false});
+    }
+    if(ex.setDetails.length > count) ex.setDetails = ex.setDetails.slice(0,count);
+    return ex.setDetails;
+  }
+
+  function trainingSessionsForExercise(name){
+    var data = currentData();
+    var needle = normalizedExerciseName(name);
+    var result = [];
+    (data.trainingHistory || []).forEach(function(session){
+      (session.exercises || []).forEach(function(ex){
+        if(normalizedExerciseName(ex.name) === needle){
+          result.push({
+            date:session.date,
+            timestamp:session.timestamp || session.date,
+            exercise:ex
+          });
+        }
+      });
+    });
+    result.sort(function(a,b){ return String(b.timestamp).localeCompare(String(a.timestamp)); });
+    return result;
+  }
+
+  function bestSetForExercise(name){
+    var sessions = trainingSessionsForExercise(name);
+    var best = null;
+    sessions.forEach(function(s){
+      (s.exercise.setDetails || []).forEach(function(set){
+        var weight = goalNumber(set.weight);
+        var reps = Math.max(0, parseInt(set.reps,10) || 0);
+        if(weight <= 0 && reps <= 0) return;
+        if(!best || weight > best.weight || (weight === best.weight && reps > best.reps)){
+          best = {weight:weight, reps:reps};
+        }
+      });
+    });
+    return best;
+  }
+
+  function compactSetsText(sets){
+    var usable = (sets || []).filter(function(s){
+      return goalNumber(s.weight) > 0 || (parseInt(s.reps,10) || 0) > 0;
+    });
+    if(!usable.length) return "keine Satzdaten";
+    return usable.map(function(s){
+      var w = goalNumber(s.weight);
+      var r = parseInt(s.reps,10) || 0;
+      return (w ? formatMacro(w) + " kg" : "– kg") + " × " + (r || "–");
+    }).join(" · ");
+  }
+
+  function exerciseHistoryHint(name){
+    var sessions = trainingSessionsForExercise(name);
+    var last = sessions.length ? sessions[0] : null;
+    var best = bestSetForExercise(name);
+    var parts = [];
+    if(last) parts.push("Letztes Mal: " + compactSetsText(last.exercise.setDetails));
+    if(best) parts.push("Bestleistung: " + (best.weight ? formatMacro(best.weight) + " kg" : "– kg") + " × " + (best.reps || "–"));
+    return parts.length ? parts.join(" · ") : "Noch keine Trainingshistorie.";
+  }
+
+  function dayTrainingHistory(dayKey){
+    var data = currentData();
+    return (data.trainingHistory || [])
+      .filter(function(s){ return s.dayKey === dayKey; })
+      .sort(function(a,b){ return String(b.timestamp || b.date).localeCompare(String(a.timestamp || a.date)); });
+  }
+
+  function updateExerciseSetCount(dayKey, exId, value){
+    var data = currentData();
+    var day = data.training.days[dayKey];
+    if(!day) return;
+    var ex = day.exercises.find(function(e){ return e.id === exId; });
+    if(!ex) return;
+    var count = Math.max(1, Math.min(10, parseInt(value,10) || 1));
+    ex.sets = count;
+    if(!Array.isArray(ex.setDetails)) ex.setDetails = [];
+    while(ex.setDetails.length < count) ex.setDetails.push({reps:"",weight:"",done:false});
+    if(ex.setDetails.length > count) ex.setDetails = ex.setDetails.slice(0,count);
+    saveData(state.profile, data);
+    render();
+  }
+
+  function updateExerciseSetField(dayKey, exId, setIndex, field, value){
+    var data = currentData();
+    var day = data.training.days[dayKey];
+    if(!day) return;
+    var ex = day.exercises.find(function(e){ return e.id === exId; });
+    if(!ex) return;
+    var sets = exerciseSetDetails(ex);
+    var row = sets[Number(setIndex)];
+    if(!row) return;
+    row[field] = value;
+    saveData(state.profile, data);
+  }
+
+  function toggleExerciseSetDone(dayKey, exId, setIndex){
+    var data = currentData();
+    var day = data.training.days[dayKey];
+    if(!day) return;
+    var ex = day.exercises.find(function(e){ return e.id === exId; });
+    if(!ex) return;
+    var sets = exerciseSetDetails(ex);
+    var row = sets[Number(setIndex)];
+    if(!row) return;
+    row.done = !row.done;
+    saveData(state.profile, data);
+    render();
+  }
+
+  function completeTraining(dayKey){
+    var data = currentData();
+    var day = data.training.days[dayKey];
+    if(!day || day.type === "rest" || !day.exercises || !day.exercises.length){
+      showToast("Keine Übungen zum Abschließen");
+      return;
+    }
+
+    var now = new Date();
+    var dateKey = now.getFullYear() + "-" +
+      String(now.getMonth()+1).padStart(2,"0") + "-" +
+      String(now.getDate()).padStart(2,"0");
+
+    var snapshot = {
+      id:uid(),
+      dayKey:dayKey,
+      type:day.type,
+      date:dateKey,
+      timestamp:now.toISOString(),
+      exercises:day.exercises.map(function(ex){
+        return {
+          name:ex.name,
+          sets:parseInt(ex.sets,10) || 1,
+          setDetails:exerciseSetDetails(ex).map(function(s){
+            return {
+              reps:s.reps || "",
+              weight:s.weight || "",
+              done:!!s.done
+            };
+          })
+        };
+      })
+    };
+
+    if(!Array.isArray(data.trainingHistory)) data.trainingHistory = [];
+    data.trainingHistory.push(snapshot);
+
+    // Satzwerte bleiben als Vorlage für das nächste Training erhalten,
+    // nur die Häkchen werden zurückgesetzt.
+    day.exercises.forEach(function(ex){
+      exerciseSetDetails(ex).forEach(function(s){ s.done = false; });
+    });
+
+    saveData(state.profile, data);
+    render();
+    showToast("Training abgeschlossen & gespeichert");
   }
 
   /* ---------- Rendering ---------- */
@@ -2280,7 +2640,7 @@
       var meals = data.nutrition.days[d.key].meals;
       return MEALS.some(function(m){ return meals[m.key].length > 0; });
     }).length;
-    sub.textContent = setCount + " von 7 Tagen mit Einträgen · " + state.profile;
+    sub.textContent = "Heute: " + todayDayLabel() + " · " + setCount + " von 7 Tagen mit Einträgen · " + state.profile;
 
     list.innerHTML = DAYS.map(function(d){
       var day = data.nutrition.days[d.key];
@@ -2320,7 +2680,7 @@
         '</div>';
       }).join("");
 
-      return '<div class="plan-card' + (open ? ' open' : '') + '" data-plan-id="' + d.key + '">' +
+      return '<div class="plan-card' + (open ? ' open' : '') + '" data-plan-id="' + d.key + '" data-nutrition-day="' + d.key + '">' +
         '<div class="plan-card-head" data-action="toggle" data-plan="' + d.key + '" data-kind="n">' +
           '<div><h3>' + d.label + (d.key === todayDayKey() ? ' <span class="today-badge">Heute</span>' : '') + '</h3>' +
             (totalItems
@@ -2342,7 +2702,8 @@
     var list = document.getElementById("trainingList");
     var sub = document.getElementById("trainingSub");
     var setCount = DAYS.filter(function(d){ return data.training.days[d.key].type; }).length;
-    sub.textContent = setCount + " von 7 Tagen geplant · " + state.profile;
+    var completedCount = (data.trainingHistory || []).length;
+    sub.textContent = setCount + " von 7 Tagen geplant · " + completedCount + " Trainings gespeichert · " + state.profile;
 
     list.innerHTML = DAYS.map(function(d){
       var day = data.training.days[d.key];
@@ -2356,34 +2717,64 @@
         }).join("") +
       '</div>';
 
-      var bodyExtra;
+      var bodyExtra = "";
       if(day.type === "rest"){
-        bodyExtra = '<div class="rest-note">Ruhetag — keine Übungen eingetragen.</div>';
-      }else if(!day.type){
-        bodyExtra = '<div class="rest-note">Erst einen Tagestyp wählen, um Übungen einzutragen.</div>';
-      }else{
+        bodyExtra = '<div class="empty-note">Rest Day – heute ist kein Training geplant.</div>';
+      }else if(day.type){
         var exHtml = (day.exercises || []).map(function(ex){
-          return '<div class="exercise-row">' +
-            '<div class="exercise-top">' +
-              '<div class="exercise-name">' + escapeHtml(ex.name) + '</div>' +
+          var sets = exerciseSetDetails(ex);
+          var setRows = sets.map(function(set, idx){
+            return '<div class="set-row' + (set.done ? ' done' : '') + '">' +
+              '<div class="set-number">Satz ' + (idx + 1) + '</div>' +
+              '<label>Wdh.' +
+                '<input type="number" min="0" inputmode="numeric" value="' + escapeHtml(set.reps || "") + '"' +
+                  ' data-action="updateSetField" data-day="' + d.key + '" data-item="' + ex.id + '" data-set="' + idx + '" data-field="reps">' +
+              '</label>' +
+              '<label>Gewicht kg' +
+                '<input type="number" min="0" step="0.5" inputmode="decimal" value="' + escapeHtml(set.weight || "") + '"' +
+                  ' data-action="updateSetField" data-day="' + d.key + '" data-item="' + ex.id + '" data-set="' + idx + '" data-field="weight">' +
+              '</label>' +
+              '<button type="button" class="set-done-btn" data-action="toggleSetDone" data-day="' + d.key + '" data-item="' + ex.id + '" data-set="' + idx + '">✓</button>' +
+            '</div>';
+          }).join("");
+
+          return '<div class="exercise-card">' +
+            '<div class="exercise-card-head">' +
+              '<div><div class="exercise-name">' + escapeHtml(ex.name) + '</div>' +
+                '<div class="exercise-history-hint">' + escapeHtml(exerciseHistoryHint(ex.name)) + '</div>' +
+              '</div>' +
               '<button class="item-remove" data-action="removeExercise" data-day="' + d.key + '" data-item="' + ex.id + '">&times;</button>' +
             '</div>' +
-            '<div class="exercise-fields">' +
-              '<label>Sätze<input type="number" min="0" inputmode="numeric" value="' + escapeHtml(ex.sets || "") + '" data-action="updateExercise" data-day="' + d.key + '" data-item="' + ex.id + '" data-field="sets"></label>' +
-              '<label>Wdh.<input type="number" min="0" inputmode="numeric" value="' + escapeHtml(ex.reps || "") + '" data-action="updateExercise" data-day="' + d.key + '" data-item="' + ex.id + '" data-field="reps"></label>' +
-              '<label>Gewicht<input type="text" inputmode="decimal" value="' + escapeHtml(ex.weight || "") + '" placeholder="kg" data-action="updateExercise" data-day="' + d.key + '" data-item="' + ex.id + '" data-field="weight"></label>' +
+            '<div class="set-count-row">Sätze' +
+              '<input type="number" min="1" max="10" inputmode="numeric" value="' + sets.length + '"' +
+                ' data-action="updateSetCount" data-day="' + d.key + '" data-item="' + ex.id + '">' +
             '</div>' +
+            '<div class="set-list">' + setRows + '</div>' +
           '</div>';
         }).join("");
 
+        var histories = dayTrainingHistory(d.key).slice(0,3);
+        var historyHtml = '<div class="training-day-history"><h4>Letzte abgeschlossene Trainings</h4>' +
+          (histories.length ? histories.map(function(session){
+            var label = session.date ? session.date.split("-").reverse().join(".") : "";
+            var totalSets = (session.exercises || []).reduce(function(sum, ex){
+              return sum + (ex.setDetails || []).length;
+            }, 0);
+            return '<div class="history-session"><span>' + escapeHtml(label) + '</span><strong>' +
+              (session.exercises || []).length + ' Übungen · ' + totalSets + ' Sätze</strong></div>';
+          }).join("") : '<div class="dash-empty">Noch kein Training abgeschlossen.</div>') +
+        '</div>';
+
         bodyExtra = exHtml +
-          '<form class="mini-form" data-action="addExercise" data-day="' + d.key + '">' +
-            '<input class="f-name" name="name" placeholder="Übung, z. B. Kniebeuge" required>' +
-            '<input class="f-small" name="sets" placeholder="Sätze" type="number" min="0">' +
-            '<input class="f-small" name="reps" placeholder="Wdh." type="number" min="0">' +
-            '<input class="f-small" name="weight" placeholder="Gewicht">' +
+          '<form class="exercise-add-form" data-action="addExercise" data-day="' + d.key + '">' +
+            '<input name="name" placeholder="Übung, z. B. Bankdrücken" required>' +
+            '<input name="sets" placeholder="Sätze" type="number" min="1" max="10" value="3" required>' +
             '<button type="submit">+ Übung</button>' +
-          '</form>';
+          '</form>' +
+          ((day.exercises || []).length
+            ? '<button type="button" class="training-complete-btn" data-action="completeTraining" data-day="' + d.key + '">Training abschließen</button>'
+            : '') +
+          historyHtml;
       }
 
       return '<div class="plan-card' + (open ? ' open' : '') + '" data-plan-id="' + d.key + '">' +
@@ -2444,7 +2835,13 @@
     var data = currentData();
     var day = data.training.days[dayKey];
     if(!day) return;
+    var count = Math.max(1, Math.min(10, parseInt(ex.sets,10) || 1));
     ex.id = uid();
+    ex.sets = count;
+    ex.setDetails = [];
+    for(var i=0;i<count;i++){
+      ex.setDetails.push({reps:"", weight:"", done:false});
+    }
     day.exercises.push(ex);
     saveData(state.profile, data);
     render();
@@ -2457,16 +2854,6 @@
     day.exercises = day.exercises.filter(function(e){ return e.id !== exId; });
     saveData(state.profile, data);
     render();
-  }
-
-  function updateExercise(dayKey, exId, field, value){
-    var data = currentData();
-    var day = data.training.days[dayKey];
-    if(!day) return;
-    var ex = day.exercises.find(function(e){ return e.id === exId; });
-    if(!ex) return;
-    ex[field] = value;
-    saveData(state.profile, data);
   }
 
   /* ---------- Event wiring ---------- */
@@ -2515,6 +2902,18 @@
       return;
     }
 
+    var doneSet = e.target.closest('[data-action="toggleSetDone"]');
+    if(doneSet){
+      toggleExerciseSetDone(doneSet.dataset.day, doneSet.dataset.item, doneSet.dataset.set);
+      return;
+    }
+
+    var completeBtn = e.target.closest('[data-action="completeTraining"]');
+    if(completeBtn){
+      completeTraining(completeBtn.dataset.day);
+      return;
+    }
+
     var typeBtn = e.target.closest('[data-action="setDayType"]');
     if(typeBtn){
       setDayType(typeBtn.dataset.day, typeBtn.dataset.type);
@@ -2523,9 +2922,22 @@
   });
 
   document.getElementById("views").addEventListener("change", function(e){
-    var field = e.target.closest('[data-action="updateExercise"]');
-    if(field){
-      updateExercise(field.dataset.day, field.dataset.item, field.dataset.field, field.value);
+    var setField = e.target.closest('[data-action="updateSetField"]');
+    if(setField){
+      updateExerciseSetField(
+        setField.dataset.day,
+        setField.dataset.item,
+        setField.dataset.set,
+        setField.dataset.field,
+        setField.value
+      );
+      return;
+    }
+
+    var setCount = e.target.closest('[data-action="updateSetCount"]');
+    if(setCount){
+      updateExerciseSetCount(setCount.dataset.day, setCount.dataset.item, setCount.value);
+      return;
     }
   });
 
@@ -2538,9 +2950,7 @@
       if(!exName) return;
       addExercise(form.dataset.day, {
         name: exName,
-        sets: form.sets.value.trim(),
-        reps: form.reps.value.trim(),
-        weight: form.weight.value.trim()
+        sets: form.sets.value.trim()
       });
       form.reset();
     }
@@ -2608,6 +3018,17 @@
     saveGoalField("activity", e.target.value);
   });
 
+
+  document.getElementById("openTodayNutrition").addEventListener("click", function(){
+    var key = todayDayKey();
+    state.openCards["n-" + key] = true;
+    state.view = "ernaehrung";
+    render();
+    setTimeout(function(){
+      var card = document.querySelector('[data-nutrition-day="' + key + '"]');
+      if(card) card.scrollIntoView({behavior:"smooth", block:"start"});
+    }, 60);
+  });
 
   document.getElementById("saveQuickWeight").addEventListener("click", saveTodayWeight);
   document.getElementById("quickWeight").addEventListener("keydown", function(e){
