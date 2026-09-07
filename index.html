@@ -1389,6 +1389,106 @@
     .weight-chart-stats{grid-template-columns:1fr 1fr;}
   }
 
+
+  /* ---------- Wochenübersicht ---------- */
+  .week-card{
+    border:1px solid var(--line);
+    background:rgba(255,255,255,.03);
+    border-radius:16px;
+    padding:14px;
+  }
+  .week-card-head{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    gap:10px;
+    margin-bottom:10px;
+  }
+  .week-title{font-size:13px;font-weight:850;}
+  .week-range{font-size:10px;color:var(--ink-soft);margin-top:3px;}
+  .week-score{
+    border:1px solid rgba(98,224,184,.24);
+    background:rgba(98,224,184,.08);
+    color:#91ebc9;
+    border-radius:999px;
+    padding:6px 9px;
+    font-size:10px;
+    font-weight:850;
+    white-space:nowrap;
+  }
+  .week-grid{
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:8px;
+  }
+  .week-stat{
+    border:1px solid rgba(255,255,255,.05);
+    background:rgba(255,255,255,.02);
+    border-radius:12px;
+    padding:10px;
+  }
+  .week-stat span{
+    display:block;
+    color:var(--ink-soft);
+    font-size:9.5px;
+    margin-bottom:4px;
+  }
+  .week-stat strong{
+    display:block;
+    font-size:14px;
+  }
+  .week-days{
+    display:grid;
+    grid-template-columns:repeat(7,minmax(0,1fr));
+    gap:5px;
+    margin-top:11px;
+  }
+  .week-day{
+    min-width:0;
+    text-align:center;
+    border:1px solid rgba(255,255,255,.05);
+    background:rgba(255,255,255,.02);
+    border-radius:10px;
+    padding:7px 3px;
+  }
+  .week-day.today{
+    border-color:rgba(98,224,184,.28);
+    background:rgba(98,224,184,.05);
+  }
+  .week-day .wd-name{
+    font-size:9px;
+    color:var(--ink-soft);
+    margin-bottom:4px;
+  }
+  .week-day .wd-dot{
+    width:7px;height:7px;border-radius:50%;
+    margin:0 auto 4px;
+    background:rgba(255,255,255,.14);
+  }
+  .week-day.good .wd-dot{background:#8fe7c8;}
+  .week-day.partial .wd-dot{background:#f5c36b;}
+  .week-day .wd-kcal{
+    font-size:8.5px;
+    color:var(--ink-soft);
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  .week-feedback{
+    margin-top:11px;
+    padding:10px 11px;
+    border-radius:11px;
+    background:rgba(255,255,255,.025);
+    border:1px solid rgba(255,255,255,.05);
+    color:var(--ink-soft);
+    font-size:11px;
+    line-height:1.45;
+  }
+  @media(max-width:390px){
+    .week-days{gap:3px;}
+    .week-day{padding:6px 2px;}
+  }
+
 </style>
 </head>
 <body class="app-locked">
@@ -1478,6 +1578,33 @@
           <div class="dash-value" id="dashTraining">Rest Day</div>
           <div class="dash-small" id="dashTrainingSub">Kein Training eingetragen.</div>
           <button class="dash-action" type="button" data-go="training">Trainingsplan öffnen</button>
+        </div>
+
+        <div class="dash-card full">
+          <div class="dash-label">Diese Woche</div>
+          <div class="week-card">
+            <div class="week-card-head">
+              <div>
+                <div class="week-title">Wochenübersicht</div>
+                <div class="week-range" id="weekRange"></div>
+              </div>
+              <div class="week-score" id="weekScore">Noch offen</div>
+            </div>
+
+            <div class="week-grid">
+              <div class="week-stat"><span>Training</span><strong id="weekTraining">0 / 0</strong></div>
+              <div class="week-stat"><span>Ø Kalorien</span><strong id="weekCalories">–</strong></div>
+              <div class="week-stat"><span>Kalorienziel</span><strong id="weekCalGoal">0 Tage</strong></div>
+              <div class="week-stat"><span>Eiweißziel</span><strong id="weekProteinGoal">0 Tage</strong></div>
+              <div class="week-stat"><span>Ø Eiweiß</span><strong id="weekProteinAvg">–</strong></div>
+              <div class="week-stat"><span>Wasserziel</span><strong id="weekWaterGoal">0 Tage</strong></div>
+              <div class="week-stat"><span>Gewicht</span><strong id="weekWeightChange">–</strong></div>
+              <div class="week-stat"><span>Erfasste Tage</span><strong id="weekLoggedDays">0 / 7</strong></div>
+            </div>
+
+            <div class="week-days" id="weekDays"></div>
+            <div class="week-feedback" id="weekFeedback">Noch nicht genug Daten für eine Bewertung.</div>
+          </div>
         </div>
 
         <div class="dash-card full">
@@ -3084,6 +3211,241 @@
     requestAnimationFrame(drawWeightChart);
   }
 
+
+  function weekStartMonday(date){
+    var d = new Date(date || new Date());
+    d.setHours(0,0,0,0);
+    var dow = d.getDay();
+    var diff = dow === 0 ? -6 : 1 - dow;
+    d.setDate(d.getDate() + diff);
+    return d;
+  }
+
+  function addDays(date, days){
+    var d = new Date(date);
+    d.setDate(d.getDate() + days);
+    return d;
+  }
+
+  function dayKeyFromDate(date){
+    var map = ["so","mo","di","mi","do","fr","sa"];
+    return map[date.getDay()];
+  }
+
+  function nutritionTotalsForDay(dayKey){
+    var data = currentData();
+    var day = data.nutrition.days[dayKey];
+    if(!day || !day.meals) return {kcal:0,protein:0,carbs:0,fat:0,count:0};
+
+    var totals = {kcal:0,protein:0,carbs:0,fat:0,count:0};
+    MEALS.forEach(function(m){
+      var items = Array.isArray(day.meals[m.key]) ? day.meals[m.key] : [];
+      items.forEach(function(item){
+        totals.kcal += numberOrZero(item.kcal);
+        totals.protein += numberOrZero(item.protein);
+        totals.carbs += numberOrZero(item.carbs);
+        totals.fat += numberOrZero(item.fat);
+        totals.count += 1;
+      });
+    });
+    return totals;
+  }
+
+  function currentWeekDates(){
+    var start = weekStartMonday(new Date());
+    var out = [];
+    for(var i=0;i<7;i++) out.push(addDays(start,i));
+    return out;
+  }
+
+  function completedTrainingOnDate(date, dayKey){
+    var data = currentData();
+    var key = localDateKey(date);
+    return (data.trainingHistory || []).some(function(s){
+      return s.date === key && s.dayKey === dayKey;
+    });
+  }
+
+  function plannedTrainingForDay(dayKey){
+    var data = currentData();
+    var day = data.training.days[dayKey];
+    return !!(day && day.type && day.type !== "rest");
+  }
+
+  function weekWeightChange(dates){
+    var data = currentData();
+    var startKey = localDateKey(dates[0]);
+    var endKey = localDateKey(dates[6]);
+    var rows = (data.weightHistory || [])
+      .filter(function(x){ return x.date >= startKey && x.date <= endKey; })
+      .sort(function(a,b){ return a.date.localeCompare(b.date); });
+
+    if(rows.length < 2) return null;
+    return round1(numberOrZero(rows[rows.length-1].weight) - numberOrZero(rows[0].weight));
+  }
+
+  function renderWeeklyOverview(){
+    var dates = currentWeekDates();
+    var calc = calculateGoalTargets(goalData());
+    var calorieTarget = calc ? calc.calories : 0;
+    var proteinTarget = calc ? calc.protein : 0;
+    var waterTarget = automaticWaterGoalMl();
+
+    var planned = 0;
+    var completed = 0;
+    var loggedDays = 0;
+    var kcalSum = 0;
+    var proteinSum = 0;
+    var calGoalDays = 0;
+    var proteinGoalDays = 0;
+    var waterGoalDays = 0;
+
+    var dayNames = ["Mo","Di","Mi","Do","Fr","Sa","So"];
+    var todayKey = localDateKey(new Date());
+    var dayHtml = [];
+
+    dates.forEach(function(date, i){
+      var dayKey = dayKeyFromDate(date);
+      var dateKey = localDateKey(date);
+      var totals = nutritionTotalsForDay(dayKey);
+      var hasFood = totals.count > 0;
+
+      if(plannedTrainingForDay(dayKey)) planned++;
+      if(completedTrainingOnDate(date, dayKey)) completed++;
+
+      if(hasFood){
+        loggedDays++;
+        kcalSum += totals.kcal;
+        proteinSum += totals.protein;
+
+        if(calorieTarget){
+          var ratio = totals.kcal / calorieTarget;
+          if(ratio >= 0.90 && ratio <= 1.10) calGoalDays++;
+        }
+        if(proteinTarget && totals.protein >= proteinTarget * 0.90){
+          proteinGoalDays++;
+        }
+      }
+
+      var waterMl = numberOrZero((waterData().days || {})[dateKey] || 0);
+      if(waterTarget && waterMl >= waterTarget) waterGoalDays++;
+
+      var cls = "";
+      if(dateKey === todayKey) cls += " today";
+      if(hasFood){
+        var goodCal = calorieTarget ? (totals.kcal >= calorieTarget*0.90 && totals.kcal <= calorieTarget*1.10) : false;
+        var goodProtein = proteinTarget ? totals.protein >= proteinTarget*0.90 : false;
+        cls += (goodCal && goodProtein) ? " good" : " partial";
+      }
+
+      dayHtml.push(
+        '<div class="week-day' + cls + '">' +
+          '<div class="wd-name">' + dayNames[i] + '</div>' +
+          '<div class="wd-dot"></div>' +
+          '<div class="wd-kcal">' + (hasFood ? Math.round(totals.kcal) : "–") + '</div>' +
+        '</div>'
+      );
+    });
+
+    var kcalAvg = loggedDays ? kcalSum / loggedDays : 0;
+    var proteinAvg = loggedDays ? proteinSum / loggedDays : 0;
+    var weightChange = weekWeightChange(dates);
+
+    var rangeEl = document.getElementById("weekRange");
+    var trainingEl = document.getElementById("weekTraining");
+    var calEl = document.getElementById("weekCalories");
+    var calGoalEl = document.getElementById("weekCalGoal");
+    var proteinGoalEl = document.getElementById("weekProteinGoal");
+    var proteinAvgEl = document.getElementById("weekProteinAvg");
+    var waterEl = document.getElementById("weekWaterGoal");
+    var weightEl = document.getElementById("weekWeightChange");
+    var loggedEl = document.getElementById("weekLoggedDays");
+    var daysEl = document.getElementById("weekDays");
+    var scoreEl = document.getElementById("weekScore");
+    var feedbackEl = document.getElementById("weekFeedback");
+
+    var fmt = function(d){
+      return String(d.getDate()).padStart(2,"0") + "." + String(d.getMonth()+1).padStart(2,"0");
+    };
+
+    if(rangeEl) rangeEl.textContent = fmt(dates[0]) + " – " + fmt(dates[6]);
+    if(trainingEl) trainingEl.textContent = completed + " / " + planned;
+    if(calEl) calEl.textContent = loggedDays ? Math.round(kcalAvg) + " kcal" : "–";
+    if(calGoalEl) calGoalEl.textContent = calGoalDays + " Tage";
+    if(proteinGoalEl) proteinGoalEl.textContent = proteinGoalDays + " Tage";
+    if(proteinAvgEl) proteinAvgEl.textContent = loggedDays ? Math.round(proteinAvg) + " g" : "–";
+    if(waterEl) waterEl.textContent = waterGoalDays + " Tage";
+    if(weightEl){
+      weightEl.textContent = weightChange === null
+        ? "–"
+        : (weightChange > 0 ? "+" : "") + formatMacro(weightChange) + " kg";
+    }
+    if(loggedEl) loggedEl.textContent = loggedDays + " / 7";
+    if(daysEl) daysEl.innerHTML = dayHtml.join("");
+
+    var score = 0;
+    var possible = 0;
+
+    if(planned > 0){
+      possible++;
+      if(completed >= planned) score++;
+      else if(completed >= planned * 0.7) score += 0.7;
+      else if(completed > 0) score += 0.4;
+    }
+
+    if(loggedDays > 0 && calorieTarget){
+      possible++;
+      score += Math.min(1, calGoalDays / loggedDays);
+    }
+
+    if(loggedDays > 0 && proteinTarget){
+      possible++;
+      score += Math.min(1, proteinGoalDays / loggedDays);
+    }
+
+    var elapsedDays = dates.filter(function(d){ return localDateKey(d) <= todayKey; }).length;
+    if(waterTarget && elapsedDays > 0){
+      possible++;
+      score += Math.min(1, waterGoalDays / elapsedDays);
+    }
+
+    var pctScore = possible ? Math.round((score / possible) * 100) : 0;
+    var label = "Noch offen";
+    if(possible){
+      if(pctScore >= 85) label = "Sehr gut im Plan";
+      else if(pctScore >= 65) label = "Gut im Plan";
+      else if(pctScore >= 45) label = "Teilweise im Plan";
+      else label = "Noch Luft nach oben";
+    }
+    if(scoreEl) scoreEl.textContent = label;
+
+    var tips = [];
+    if(loggedDays === 0){
+      tips.push("Noch keine Ernährung für diese Woche eingetragen.");
+    }else{
+      if(calorieTarget && calGoalDays < Math.max(1, Math.ceil(loggedDays * 0.6))){
+        tips.push("Kalorienziel wird aktuell nur an wenigen Tagen getroffen.");
+      }
+      if(proteinTarget && proteinGoalDays < Math.max(1, Math.ceil(loggedDays * 0.6))){
+        tips.push("Eiweiß liegt an mehreren Tagen unter dem Ziel.");
+      }
+    }
+
+    if(planned > 0 && completed < planned){
+      tips.push("Noch " + Math.max(0, planned-completed) + " geplante" + (planned-completed === 1 ? "s Training" : " Trainings") + " offen.");
+    }
+
+    if(waterTarget && elapsedDays > 0 && waterGoalDays < Math.ceil(elapsedDays * 0.6)){
+      tips.push("Wasserziel wurde diese Woche bisher selten erreicht.");
+    }
+
+    if(!tips.length){
+      tips.push("Die Woche sieht bisher ausgeglichen aus. Weiter so.");
+    }
+
+    if(feedbackEl) feedbackEl.textContent = tips.join(" ");
+  }
+
   function renderDashboard(){
     var totals = todayNutritionTotals();
     var g = goalData();
@@ -3165,6 +3527,7 @@
     renderWeightHistory();
     renderWater();
     renderWeightChartStats();
+    renderWeeklyOverview();
   }
 
 
