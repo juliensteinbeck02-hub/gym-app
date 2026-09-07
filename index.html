@@ -1285,6 +1285,134 @@
     font-weight:850;
   }
 
+
+  /* ---------- Gewichtsdiagramm & Wasser ---------- */
+  .weight-chart-card{
+    border:1px solid var(--line);
+    background:rgba(255,255,255,.03);
+    border-radius:16px;
+    padding:14px;
+    margin-top:10px;
+  }
+  .weight-chart-head{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    gap:10px;
+    margin-bottom:10px;
+  }
+  .weight-chart-title{font-size:12px;font-weight:800;}
+  .weight-chart-tabs{display:flex;gap:6px;flex-wrap:wrap;}
+  .weight-chart-tab{
+    border:1px solid var(--line);
+    background:rgba(255,255,255,.03);
+    color:var(--ink-soft);
+    border-radius:999px;
+    padding:6px 9px;
+    font-size:10px;
+    font-weight:800;
+  }
+  .weight-chart-tab.active{
+    background:rgba(98,224,184,.12);
+    border-color:rgba(98,224,184,.3);
+    color:#91ebc9;
+  }
+  .weight-chart-wrap{
+    width:100%;
+    height:190px;
+    position:relative;
+  }
+  .weight-chart-wrap canvas{
+    width:100% !important;
+    height:190px !important;
+    display:block;
+  }
+  .weight-chart-stats{
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:8px;
+    margin-top:10px;
+  }
+  .weight-chart-stat{
+    padding:10px;
+    border:1px solid rgba(255,255,255,.05);
+    border-radius:11px;
+    background:rgba(255,255,255,.02);
+  }
+  .weight-chart-stat span{
+    display:block;
+    font-size:9.5px;
+    color:var(--ink-soft);
+    margin-bottom:3px;
+  }
+  .weight-chart-stat strong{font-size:13px;}
+  .water-card{
+    border:1px solid var(--line);
+    background:rgba(255,255,255,.03);
+    border-radius:16px;
+    padding:14px;
+  }
+  .water-head{
+    display:flex;justify-content:space-between;align-items:flex-start;gap:10px;
+  }
+  .water-value{font-size:20px;font-weight:800;}
+  .water-progress{
+    margin:10px 0 8px;
+    height:9px;
+    border-radius:999px;
+    overflow:hidden;
+    background:rgba(255,255,255,.06);
+  }
+  .water-progress > div{
+    height:100%;
+    width:0;
+    background:currentColor;
+    color:#76b9ff;
+    transition:width .2s ease;
+  }
+  .water-actions{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:7px;
+    margin-top:9px;
+  }
+  .water-actions button{
+    border:1px solid rgba(118,185,255,.25);
+    background:rgba(118,185,255,.07);
+    color:#9bcaff;
+    border-radius:10px;
+    padding:9px;
+    font-size:11px;
+    font-weight:800;
+  }
+  .water-goal-row{
+    display:grid;
+    grid-template-columns:1fr auto;
+    gap:7px;
+    margin-top:10px;
+  }
+  .water-goal-row input{
+    min-width:0;
+    border:1px solid var(--line);
+    background:#0d131c;
+    color:var(--ink);
+    border-radius:10px;
+    padding:9px 10px;
+    font-size:12px;
+  }
+  .water-goal-row button{
+    border:0;
+    border-radius:10px;
+    padding:9px 12px;
+    background:#8fe7c8;
+    color:#07100d;
+    font-size:11px;
+    font-weight:850;
+  }
+  @media(max-width:390px){
+    .weight-chart-stats{grid-template-columns:1fr 1fr;}
+  }
+
 </style>
 </head>
 <body class="app-locked">
@@ -1353,6 +1481,23 @@
         </div>
 
         <div class="dash-card full">
+          <div class="dash-label">Wasser heute</div>
+          <div class="water-card">
+            <div class="water-head">
+              <div>
+                <div class="water-value" id="dashWaterValue">0,0 / 3,0 L</div>
+                <div class="dash-small" id="dashWaterLeft">3,0 L übrig</div>
+              </div>
+            </div>
+            <div class="water-progress"><div id="dashWaterBar"></div></div>
+            <div class="water-actions">
+              <button type="button" data-water-add="250">+250 ml</button>
+              <button type="button" data-water-add="500">+500 ml</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="dash-card full">
           <div class="dash-label">Training heute</div>
           <div class="dash-value" id="dashTraining">Rest Day</div>
           <div class="dash-small" id="dashTrainingSub">Kein Training eingetragen.</div>
@@ -1368,6 +1513,26 @@
           </div>
           <div class="dash-small" id="weightProgressText"></div>
           <div class="weight-list" id="weightHistoryList"></div>
+
+          <div class="weight-chart-card">
+            <div class="weight-chart-head">
+              <div class="weight-chart-title">Gewichtsverlauf</div>
+              <div class="weight-chart-tabs">
+                <button type="button" class="weight-chart-tab active" data-weight-range="7">7 Tage</button>
+                <button type="button" class="weight-chart-tab" data-weight-range="30">30 Tage</button>
+                <button type="button" class="weight-chart-tab" data-weight-range="all">Gesamt</button>
+              </div>
+            </div>
+            <div class="weight-chart-wrap">
+              <canvas id="weightChart"></canvas>
+            </div>
+            <div class="weight-chart-stats">
+              <div class="weight-chart-stat"><span>Start</span><strong id="weightStatStart">–</strong></div>
+              <div class="weight-chart-stat"><span>Aktuell</span><strong id="weightStatCurrent">–</strong></div>
+              <div class="weight-chart-stat"><span>Ziel</span><strong id="weightStatGoal">–</strong></div>
+              <div class="weight-chart-stat"><span>Trend</span><strong id="weightStatTrend">–</strong></div>
+            </div>
+          </div>
         </div>
       </div>
     </section>
@@ -1399,6 +1564,15 @@
     <!-- Einstellungen -->
     <section class="view" id="view-einstellungen">
       <div class="view-head"><h2>Einstellungen</h2></div>
+
+      <div class="settings-block">
+        <h3>Wasserziel</h3>
+        <p>Lege dein tägliches Wasserziel für das aktuell ausgewählte Profil fest.</p>
+        <div class="water-goal-row">
+          <input id="waterGoalInput" type="number" min="500" max="10000" step="100" inputmode="numeric" placeholder="z. B. 3000">
+          <button type="button" id="saveWaterGoal">Speichern</button>
+        </div>
+      </div>
 
       <div class="settings-block">
         <h3>Aktuelles Profil</h3>
@@ -1671,7 +1845,7 @@
   }
 
   function emptyData(){
-    return { nutrition: { days: emptyNutritionDays() }, training: { days: emptyTrainingDays() }, profileGoal: {}, weightHistory: [], trainingHistory: [], foodFavorites: [], savedMeals: [] };
+    return { nutrition: { days: emptyNutritionDays() }, training: { days: emptyTrainingDays() }, profileGoal: {}, weightHistory: [], trainingHistory: [], foodFavorites: [], savedMeals: [], water: {goalMl:3000, days:{}} };
   }
 
   function loadData(profile){
@@ -1719,6 +1893,15 @@
       }
       if(!Array.isArray(parsed.savedMeals)){
         parsed.savedMeals = [];
+      }
+      if(!parsed.water || typeof parsed.water !== "object"){
+        parsed.water = {goalMl:3000, days:{}};
+      }
+      if(!parsed.water.days || typeof parsed.water.days !== "object"){
+        parsed.water.days = {};
+      }
+      if(!parsed.water.goalMl){
+        parsed.water.goalMl = 3000;
       }
 
       // Migration älterer Übungseinträge auf einzelne Sätze.
@@ -2734,6 +2917,202 @@
     }).join("");
   }
 
+
+  var weightChartRange = "7";
+
+  function localDateKey(date){
+    var d = date || new Date();
+    return d.getFullYear() + "-" +
+      String(d.getMonth()+1).padStart(2,"0") + "-" +
+      String(d.getDate()).padStart(2,"0");
+  }
+
+  function waterData(){
+    var data = currentData();
+    if(!data.water || typeof data.water !== "object") data.water = {goalMl:3000,days:{}};
+    if(!data.water.days || typeof data.water.days !== "object") data.water.days = {};
+    if(!data.water.goalMl) data.water.goalMl = 3000;
+    return data.water;
+  }
+
+  function todayWaterMl(){
+    var w = waterData();
+    return numberOrZero(w.days[localDateKey()] || 0);
+  }
+
+  function addWater(ml){
+    var data = currentData();
+    if(!data.water || typeof data.water !== "object") data.water = {goalMl:3000,days:{}};
+    if(!data.water.days || typeof data.water.days !== "object") data.water.days = {};
+    var key = localDateKey();
+    data.water.days[key] = Math.max(0, numberOrZero(data.water.days[key]) + numberOrZero(ml));
+    saveData(state.profile, data);
+    render();
+    showToast("Wasser hinzugefügt");
+  }
+
+  function setWaterGoal(){
+    var input = document.getElementById("waterGoalInput");
+    if(!input) return;
+    var goal = Math.round(goalNumber(input.value));
+    if(goal < 500 || goal > 10000){
+      showToast("Bitte Wasserziel zwischen 500 und 10000 ml eingeben");
+      return;
+    }
+    var data = currentData();
+    if(!data.water || typeof data.water !== "object") data.water = {goalMl:goal,days:{}};
+    data.water.goalMl = goal;
+    if(!data.water.days || typeof data.water.days !== "object") data.water.days = {};
+    saveData(state.profile, data);
+    render();
+    showToast("Wasserziel gespeichert");
+  }
+
+  function renderWater(){
+    var w = waterData();
+    var current = todayWaterMl();
+    var goal = numberOrZero(w.goalMl) || 3000;
+    var litersCurrent = current / 1000;
+    var litersGoal = goal / 1000;
+    var left = Math.max(0, goal - current);
+
+    var val = document.getElementById("dashWaterValue");
+    var leftEl = document.getElementById("dashWaterLeft");
+    var bar = document.getElementById("dashWaterBar");
+    var goalInput = document.getElementById("waterGoalInput");
+
+    if(val) val.textContent = litersCurrent.toFixed(1).replace(".", ",") + " / " + litersGoal.toFixed(1).replace(".", ",") + " L";
+    if(leftEl){
+      leftEl.textContent = left > 0
+        ? (left/1000).toFixed(1).replace(".", ",") + " L übrig"
+        : "Tagesziel erreicht ✓";
+    }
+    if(bar) bar.style.width = Math.min(100, (current/goal)*100) + "%";
+    if(goalInput && document.activeElement !== goalInput) goalInput.value = String(goal);
+  }
+
+  function weightHistoryForRange(){
+    var data = currentData();
+    var history = Array.isArray(data.weightHistory) ? data.weightHistory.slice() : [];
+    history.sort(function(a,b){ return a.date.localeCompare(b.date); });
+    if(weightChartRange === "all") return history;
+
+    var days = Number(weightChartRange) || 7;
+    var cutoff = new Date();
+    cutoff.setHours(0,0,0,0);
+    cutoff.setDate(cutoff.getDate() - (days - 1));
+    var cutoffKey = localDateKey(cutoff);
+    return history.filter(function(x){ return x.date >= cutoffKey; });
+  }
+
+  function weightTrendPerWeek(history){
+    if(!history || history.length < 2) return null;
+    var first = history[0];
+    var last = history[history.length-1];
+    var d1 = new Date(first.date + "T00:00:00");
+    var d2 = new Date(last.date + "T00:00:00");
+    var dayDiff = Math.max(1, (d2-d1)/86400000);
+    var change = numberOrZero(last.weight) - numberOrZero(first.weight);
+    return (change / dayDiff) * 7;
+  }
+
+  function drawWeightChart(){
+    var canvas = document.getElementById("weightChart");
+    if(!canvas) return;
+    var ctx = canvas.getContext("2d");
+    var rect = canvas.getBoundingClientRect();
+    var ratio = window.devicePixelRatio || 1;
+    canvas.width = Math.max(1, rect.width * ratio);
+    canvas.height = Math.max(1, rect.height * ratio);
+    ctx.setTransform(ratio,0,0,ratio,0,0);
+
+    var w = rect.width;
+    var h = rect.height;
+    ctx.clearRect(0,0,w,h);
+
+    var history = weightHistoryForRange();
+    if(!history.length){
+      ctx.fillStyle = "rgba(180,190,205,.75)";
+      ctx.font = "12px system-ui";
+      ctx.textAlign = "center";
+      ctx.fillText("Noch keine Gewichtsdaten", w/2, h/2);
+      return;
+    }
+
+    var weights = history.map(function(x){ return numberOrZero(x.weight); }).filter(function(x){ return x > 0; });
+    if(!weights.length) return;
+
+    var min = Math.min.apply(null, weights);
+    var max = Math.max.apply(null, weights);
+    if(max === min){ max += 1; min -= 1; }
+    var padX = 22, padY = 20;
+    var innerW = Math.max(1, w - padX*2);
+    var innerH = Math.max(1, h - padY*2);
+
+    ctx.strokeStyle = "rgba(255,255,255,.07)";
+    ctx.lineWidth = 1;
+    for(var g=0;g<4;g++){
+      var gy = padY + (innerH/3)*g;
+      ctx.beginPath();
+      ctx.moveTo(padX, gy);
+      ctx.lineTo(w-padX, gy);
+      ctx.stroke();
+    }
+
+    var pts = history.map(function(item, i){
+      var x = history.length === 1 ? w/2 : padX + (i/(history.length-1))*innerW;
+      var y = padY + (1 - ((numberOrZero(item.weight)-min)/(max-min))) * innerH;
+      return {x:x,y:y,weight:numberOrZero(item.weight),date:item.date};
+    });
+
+    ctx.strokeStyle = "#8fe7c8";
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    pts.forEach(function(p,i){
+      if(i===0) ctx.moveTo(p.x,p.y); else ctx.lineTo(p.x,p.y);
+    });
+    ctx.stroke();
+
+    ctx.fillStyle = "#8fe7c8";
+    pts.forEach(function(p){
+      ctx.beginPath();
+      ctx.arc(p.x,p.y,3.2,0,Math.PI*2);
+      ctx.fill();
+    });
+
+    ctx.fillStyle = "rgba(220,228,240,.78)";
+    ctx.font = "10px system-ui";
+    ctx.textAlign = "left";
+    ctx.fillText(max.toFixed(1).replace(".", ",") + " kg", 2, 12);
+    ctx.fillText(min.toFixed(1).replace(".", ",") + " kg", 2, h-4);
+  }
+
+  function renderWeightChartStats(){
+    var data = currentData();
+    var all = Array.isArray(data.weightHistory) ? data.weightHistory.slice() : [];
+    all.sort(function(a,b){ return a.date.localeCompare(b.date); });
+    var g = goalData();
+
+    var start = all.length ? numberOrZero(all[0].weight) : 0;
+    var current = all.length ? numberOrZero(all[all.length-1].weight) : goalNumber(g.weight);
+    var target = goalNumber(g.target);
+    var rangeHistory = weightHistoryForRange();
+    var trend = weightTrendPerWeek(rangeHistory);
+
+    document.getElementById("weightStatStart").textContent = start ? formatMacro(start) + " kg" : "–";
+    document.getElementById("weightStatCurrent").textContent = current ? formatMacro(current) + " kg" : "–";
+    document.getElementById("weightStatGoal").textContent = target ? formatMacro(target) + " kg" : "–";
+    document.getElementById("weightStatTrend").textContent = trend === null
+      ? "–"
+      : (trend > 0 ? "+" : "") + trend.toFixed(2).replace(".", ",") + " kg/Woche";
+
+    document.querySelectorAll("[data-weight-range]").forEach(function(btn){
+      btn.classList.toggle("active", btn.dataset.weightRange === weightChartRange);
+    });
+
+    requestAnimationFrame(drawWeightChart);
+  }
+
   function renderDashboard(){
     var totals = todayNutritionTotals();
     var g = goalData();
@@ -2813,6 +3192,8 @@
           : exercises + (exercises === 1 ? " Übung eingetragen." : " Übungen eingetragen.");
 
     renderWeightHistory();
+    renderWater();
+    renderWeightChartStats();
   }
 
 
@@ -3578,6 +3959,25 @@
       var card = document.querySelector('[data-nutrition-day="' + key + '"]');
       if(card) card.scrollIntoView({behavior:"smooth", block:"start"});
     }, 60);
+  });
+
+  document.querySelectorAll("[data-water-add]").forEach(function(btn){
+    btn.addEventListener("click", function(){
+      addWater(Number(btn.dataset.waterAdd));
+    });
+  });
+
+  document.getElementById("saveWaterGoal").addEventListener("click", setWaterGoal);
+
+  document.querySelectorAll("[data-weight-range]").forEach(function(btn){
+    btn.addEventListener("click", function(){
+      weightChartRange = btn.dataset.weightRange;
+      renderWeightChartStats();
+    });
+  });
+
+  window.addEventListener("resize", function(){
+    if(state.view === "heute") drawWeightChart();
   });
 
   document.getElementById("saveQuickWeight").addEventListener("click", saveTodayWeight);
