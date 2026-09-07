@@ -1245,6 +1245,19 @@
     z-index:2;
   }
 
+
+  .copy-training-btn{
+    width:100%;
+    margin:10px 0 2px;
+    border:1px solid rgba(118,185,255,.24);
+    background:rgba(118,185,255,.07);
+    color:#9bcaff;
+    border-radius:11px;
+    padding:9px 10px;
+    font-size:11px;
+    font-weight:800;
+  }
+
 </style>
 </head>
 <body class="app-locked">
@@ -2967,6 +2980,58 @@
     render();
   }
 
+
+  async function copyTrainingDayFromOtherProfile(dayKey){
+    var otherProfile = state.profile === "Julien" ? "Soraia" : "Julien";
+
+    try{
+      // Try to refresh the other profile from cloud first so the newest plan is used.
+      if(syncReady){
+        var row = await fetchCloudProfile(otherProfile);
+        if(row && row.data){
+          localStorage.setItem(storageKey(otherProfile), JSON.stringify(row.data));
+          lastRemoteSnapshot[otherProfile] = JSON.stringify(row.data);
+        }
+      }
+    }catch(err){
+      console.warn("Could not refresh other profile before copy", err);
+    }
+
+    var sourceData = loadData(otherProfile);
+    var sourceDay = sourceData.training && sourceData.training.days
+      ? sourceData.training.days[dayKey]
+      : null;
+
+    if(!sourceDay || !sourceDay.type){
+      showToast(otherProfile + " hat für diesen Tag keinen Trainingsplan");
+      return;
+    }
+
+    var targetData = currentData();
+    var targetDay = targetData.training.days[dayKey];
+    if(!targetDay) return;
+
+    targetDay.type = sourceDay.type;
+    targetDay.exercises = (sourceDay.exercises || []).map(function(ex){
+      var count = Math.max(1, Math.min(10, parseInt(ex.sets,10) || 1));
+      var details = [];
+      for(var i=0;i<count;i++){
+        details.push({reps:"", weight:"", done:false});
+      }
+      return {
+        id:uid(),
+        name:ex.name,
+        sets:count,
+        setDetails:details
+      };
+    });
+
+    saveData(state.profile, targetData);
+    state.openCards["t-" + dayKey] = true;
+    render();
+    showToast("Trainingstag von " + otherProfile + " übernommen");
+  }
+
   function completeTraining(dayKey){
     var data = currentData();
     var day = data.training.days[dayKey];
@@ -3195,6 +3260,8 @@
         '</div>' +
         '<div class="plan-card-body">' +
           typeSwitch +
+          '<button type="button" class="copy-training-btn" data-action="copyTrainingDay" data-day="' + d.key + '">Trainingstag von ' +
+            (state.profile === "Julien" ? "Soraia" : "Julien") + ' übernehmen</button>' +
           bodyExtra +
         '</div>' +
       '</div>';
@@ -3320,6 +3387,12 @@
     var doneSet = e.target.closest('[data-action="toggleSetDone"]');
     if(doneSet){
       toggleExerciseSetDone(doneSet.dataset.day, doneSet.dataset.item, doneSet.dataset.set);
+      return;
+    }
+
+    var copyTrainingBtn = e.target.closest('[data-action="copyTrainingDay"]');
+    if(copyTrainingBtn){
+      copyTrainingDayFromOtherProfile(copyTrainingBtn.dataset.day);
       return;
     }
 
