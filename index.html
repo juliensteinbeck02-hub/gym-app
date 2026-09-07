@@ -950,6 +950,21 @@
     .dash-card.full{grid-column:auto;}
   }
 
+
+  .today-badge{
+    display:inline-flex;
+    align-items:center;
+    margin-left:6px;
+    padding:3px 7px;
+    border-radius:999px;
+    font-size:9px;
+    font-weight:800;
+    vertical-align:middle;
+    color:#91ebc9;
+    background:rgba(98,224,184,.10);
+    border:1px solid rgba(98,224,184,.22);
+  }
+
 </style>
 </head>
 <body class="app-locked">
@@ -1192,7 +1207,7 @@
       </div>
     </form>
 
-    <p class="food-help">Suche nach dem Produktnamen oder füge ein neues Produkt manuell hinzu. Danach gibst du nur noch die gegessene Menge in Gramm ein.</p>
+    <p class="food-help">Suche nach dem Produktnamen oder füge ein neues Produkt manuell hinzu. Danach gibst du nur noch die gegessene Menge in Gramm ein. Einträge am heutigen Tag erscheinen sofort im Dashboard.</p>
 
     <div class="food-results" id="foodResults"></div>
 
@@ -2301,19 +2316,13 @@
         return '<div class="meal-group">' +
           '<div class="meal-headline"><div class="meal-group-title">' + m.label + '</div><div class="meal-kcal">' + (mealTotals.kcal ? formatMacro(mealTotals.kcal) + ' kcal' : '') + '</div></div>' +
           itemsHtml +
-          '<button type="button" class="food-search-btn" data-action="openFoodSearch" data-day="' + d.key + '" data-meal="' + m.key + '">+ Lebensmittel suchen &amp; berechnen</button>' +
-          '<div class="manual-label">Oder manuell eintragen</div>' +
-          '<form class="mini-form" data-action="addItem" data-day="' + d.key + '" data-meal="' + m.key + '">' +
-            '<input class="f-name" name="name" placeholder="z. B. selbstgekochtes Gericht" required>' +
-            '<input class="f-small" name="meta" placeholder="Menge / Notiz">' +
-            '<button type="submit">+</button>' +
-          '</form>' +
+          '<button type="button" class="food-search-btn" data-action="openFoodSearch" data-day="' + d.key + '" data-meal="' + m.key + '">+ Lebensmittel hinzufügen</button>' +
         '</div>';
       }).join("");
 
       return '<div class="plan-card' + (open ? ' open' : '') + '" data-plan-id="' + d.key + '">' +
         '<div class="plan-card-head" data-action="toggle" data-plan="' + d.key + '" data-kind="n">' +
-          '<div><h3>' + d.label + '</h3>' +
+          '<div><h3>' + d.label + (d.key === todayDayKey() ? ' <span class="today-badge">Heute</span>' : '') + '</h3>' +
             (totalItems
               ? '<span class="chip nutrition">' + (hasCalculated ? formatMacro(dayTotals.kcal) + ' kcal · ' : '') + totalItems + ' Eintrag' + (totalItems === 1 ? "" : "e") + '</span>'
               : '<span class="chip neutral">Noch leer</span>') +
@@ -2379,7 +2388,7 @@
 
       return '<div class="plan-card' + (open ? ' open' : '') + '" data-plan-id="' + d.key + '">' +
         '<div class="plan-card-head" data-action="toggle" data-plan="' + d.key + '" data-kind="t">' +
-          '<div><h3>' + d.label + '</h3>' +
+          '<div><h3>' + d.label + (d.key === todayDayKey() ? ' <span class="today-badge">Heute</span>' : '') + '</h3>' +
             (typeInfo ? '<span class="chip training ' + typeInfo.key + '">' + typeInfo.label + '</span>' : '<span class="chip neutral">Kein Tagestyp</span>') +
           '</div>' +
           '<span class="chevron"></span>' +
@@ -2522,14 +2531,6 @@
 
   document.getElementById("views").addEventListener("submit", function(e){
     var form = e.target;
-
-    if(form.dataset.action === "addItem"){
-      e.preventDefault();
-      var name = form.name.value.trim();
-      var meta = form.meta.value.trim();
-      if(!name) return;
-      addMealItem(form.dataset.day, form.dataset.meal, name, meta);
-    }
 
     if(form.dataset.action === "addExercise"){
       e.preventDefault();
