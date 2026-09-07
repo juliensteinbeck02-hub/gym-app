@@ -798,6 +798,78 @@
   }
   .manual-form-actions > button{flex:1;}
 
+
+  /* ---------- Profil & Ziel ---------- */
+  .profile-goal-card{
+    background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.025));
+    border:1px solid var(--line);
+    border-radius:18px;
+    padding:17px;
+    margin-bottom:14px;
+    box-shadow:0 10px 28px rgba(0,0,0,.14);
+  }
+  .profile-goal-card h3{font-size:15px;margin-bottom:7px;}
+  .profile-goal-card p{
+    font-size:13px;color:var(--ink-soft);line-height:1.55;margin:0 0 13px;
+  }
+  .goal-grid{
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:9px;
+  }
+  .goal-grid label{
+    font-size:11px;
+    color:var(--ink-soft);
+    display:flex;
+    flex-direction:column;
+    gap:5px;
+  }
+  .goal-grid label.full{grid-column:1/-1;}
+  .goal-grid input,.goal-grid select{
+    width:100%;
+    border:1px solid var(--line);
+    background:#0d131c;
+    color:var(--ink);
+    border-radius:11px;
+    padding:10px 11px;
+    font-size:13.5px;
+    outline:none;
+  }
+  .goal-grid input:focus,.goal-grid select:focus{
+    border-color:rgba(98,224,184,.45);
+    box-shadow:0 0 0 3px rgba(98,224,184,.09);
+  }
+  .goal-result{
+    margin-top:14px;
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:8px;
+  }
+  .goal-stat{
+    border:1px solid var(--line);
+    background:rgba(255,255,255,.03);
+    border-radius:14px;
+    padding:12px;
+  }
+  .goal-stat .label{
+    font-size:10.5px;
+    color:var(--ink-soft);
+    margin-bottom:4px;
+  }
+  .goal-stat .value{
+    font-size:17px;
+    font-weight:700;
+  }
+  .goal-note{
+    margin-top:10px;
+    font-size:11.5px;
+    color:var(--ink-soft);
+    line-height:1.5;
+  }
+  @media (max-width:390px){
+    .goal-grid,.goal-result{grid-template-columns:1fr;}
+  }
+
 </style>
 </head>
 <body class="app-locked">
@@ -855,6 +927,52 @@
       <div class="settings-block">
         <h3>Aktuelles Profil</h3>
         <p>Du bearbeitest gerade die Pläne von <strong id="activeProfileLabel">Julien</strong>. Jedes Profil speichert seine Pläne getrennt, direkt auf diesem Gerät.</p>
+      </div>
+
+      <div class="profile-goal-card">
+        <h3>Körperdaten &amp; Ziel</h3>
+        <p>Diese Angaben gelten nur für das aktuell ausgewählte Profil. Daraus berechnet die App deinen geschätzten täglichen Energie- und Makrobedarf.</p>
+        <div class="goal-grid">
+          <label>Geschlecht
+            <select id="goalSex">
+              <option value="">Auswählen</option>
+              <option value="male">Männlich</option>
+              <option value="female">Weiblich</option>
+            </select>
+          </label>
+          <label>Alter
+            <input id="goalAge" type="number" min="14" max="100" inputmode="numeric" placeholder="z. B. 35">
+          </label>
+          <label>Größe in cm
+            <input id="goalHeight" type="number" min="120" max="230" inputmode="decimal" placeholder="z. B. 182">
+          </label>
+          <label>Gewicht in kg
+            <input id="goalWeight" type="number" min="35" max="350" step="0.1" inputmode="decimal" placeholder="z. B. 92">
+          </label>
+          <label>Zielgewicht in kg
+            <input id="goalTarget" type="number" min="35" max="350" step="0.1" inputmode="decimal" placeholder="z. B. 100">
+          </label>
+          <label>Aktivität
+            <select id="goalActivity">
+              <option value="">Auswählen</option>
+              <option value="1.2">Kaum Bewegung</option>
+              <option value="1.375">Leicht aktiv (1–3x/Woche)</option>
+              <option value="1.55">Aktiv (3–5x/Woche)</option>
+              <option value="1.725">Sehr aktiv (6–7x/Woche)</option>
+              <option value="1.9">Extrem aktiv / körperliche Arbeit</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="goal-result" id="goalResult">
+          <div class="goal-stat"><div class="label">Erhaltung</div><div class="value">–</div></div>
+          <div class="goal-stat"><div class="label">Zielkalorien</div><div class="value">–</div></div>
+          <div class="goal-stat"><div class="label">Eiweiß</div><div class="value">–</div></div>
+          <div class="goal-stat"><div class="label">Kohlenhydrate</div><div class="value">–</div></div>
+          <div class="goal-stat"><div class="label">Fett</div><div class="value">–</div></div>
+          <div class="goal-stat"><div class="label">Bis Ziel</div><div class="value">–</div></div>
+        </div>
+        <div class="goal-note" id="goalNote">Trage alle Werte ein, damit die Berechnung startet.</div>
       </div>
 
       <div class="settings-block">
@@ -1065,7 +1183,7 @@
   }
 
   function emptyData(){
-    return { nutrition: { days: emptyNutritionDays() }, training: { days: emptyTrainingDays() } };
+    return { nutrition: { days: emptyNutritionDays() }, training: { days: emptyTrainingDays() }, profileGoal: {} };
   }
 
   function loadData(profile){
@@ -1099,6 +1217,9 @@
           parsed.training.days[d.key] = { type: null, exercises: [] };
         }
       });
+      if(!parsed.profileGoal || typeof parsed.profileGoal !== "object"){
+        parsed.profileGoal = {};
+      }
       return parsed;
     }catch(e){
       return emptyData();
@@ -1663,6 +1784,127 @@
     showToast('Lebensmittel hinzugefügt');
   }
 
+
+  function goalData(){
+    var data = currentData();
+    return data.profileGoal || {};
+  }
+
+  function saveGoalField(field, value){
+    var data = currentData();
+    if(!data.profileGoal || typeof data.profileGoal !== "object") data.profileGoal = {};
+    data.profileGoal[field] = value;
+    saveData(state.profile, data);
+    renderGoalCalculator();
+  }
+
+  function goalNumber(v){
+    var n = Number(String(v || "").replace(",", "."));
+    return Number.isFinite(n) ? n : 0;
+  }
+
+  function calculateGoalTargets(g){
+    var age = goalNumber(g.age);
+    var height = goalNumber(g.height);
+    var weight = goalNumber(g.weight);
+    var target = goalNumber(g.target);
+    var activity = goalNumber(g.activity);
+    var sex = g.sex;
+
+    if(!age || !height || !weight || !target || !activity || !sex) return null;
+
+    // Mifflin-St Jeor
+    var bmr = sex === "male"
+      ? (10 * weight + 6.25 * height - 5 * age + 5)
+      : (10 * weight + 6.25 * height - 5 * age - 161);
+
+    var maintenance = bmr * activity;
+    var diff = target - weight;
+
+    // Moderate goal adjustment: ±15%, capped to ±500 kcal/day.
+    var adjustment = 0;
+    var direction = "halten";
+    if(diff > 0.2){
+      adjustment = Math.min(500, maintenance * 0.15);
+      direction = "zunehmen";
+    }else if(diff < -0.2){
+      adjustment = -Math.min(500, maintenance * 0.15);
+      direction = "abnehmen";
+    }
+
+    var calories = Math.max(1200, maintenance + adjustment);
+
+    // Protein: higher while dieting, moderate otherwise
+    var proteinPerKg = direction === "abnehmen" ? 2.0 : 1.8;
+    var protein = weight * proteinPerKg;
+
+    // Fat baseline
+    var fatPerKg = 0.8;
+    var fat = weight * fatPerKg;
+
+    var proteinCalories = protein * 4;
+    var fatCalories = fat * 9;
+    var carbCalories = Math.max(0, calories - proteinCalories - fatCalories);
+    var carbs = carbCalories / 4;
+
+    return {
+      bmr:bmr,
+      maintenance:maintenance,
+      calories:calories,
+      protein:protein,
+      carbs:carbs,
+      fat:fat,
+      diff:diff,
+      direction:direction
+    };
+  }
+
+  function renderGoalCalculator(){
+    var g = goalData();
+    var ids = {
+      sex:"goalSex",
+      age:"goalAge",
+      height:"goalHeight",
+      weight:"goalWeight",
+      target:"goalTarget",
+      activity:"goalActivity"
+    };
+
+    Object.keys(ids).forEach(function(key){
+      var el = document.getElementById(ids[key]);
+      if(!el) return;
+      var val = g[key] !== undefined && g[key] !== null ? String(g[key]) : "";
+      if(document.activeElement !== el) el.value = val;
+    });
+
+    var calc = calculateGoalTargets(g);
+    var result = document.getElementById("goalResult");
+    var note = document.getElementById("goalNote");
+    if(!result || !note) return;
+
+    var values = result.querySelectorAll(".value");
+    if(!calc){
+      values.forEach(function(v){ v.textContent = "–"; });
+      note.textContent = "Trage alle Werte ein, damit die Berechnung startet.";
+      return;
+    }
+
+    values[0].textContent = Math.round(calc.maintenance) + " kcal";
+    values[1].textContent = Math.round(calc.calories) + " kcal";
+    values[2].textContent = Math.round(calc.protein) + " g";
+    values[3].textContent = Math.round(calc.carbs) + " g";
+    values[4].textContent = Math.round(calc.fat) + " g";
+    values[5].textContent = (calc.diff > 0 ? "+" : "") + calc.diff.toFixed(1).replace(".", ",") + " kg";
+
+    if(calc.direction === "zunehmen"){
+      note.textContent = "Ziel: kontrollierter Aufbau mit etwa 15 % Kalorienüberschuss. Werte sind Schätzwerte und können anhand der Gewichtsentwicklung angepasst werden.";
+    }else if(calc.direction === "abnehmen"){
+      note.textContent = "Ziel: moderates Kaloriendefizit von etwa 15 %. Werte sind Schätzwerte und können anhand der Gewichtsentwicklung angepasst werden.";
+    }else{
+      note.textContent = "Zielgewicht liegt ungefähr beim aktuellen Gewicht. Daher wird Erhaltung angesetzt.";
+    }
+  }
+
   /* ---------- Rendering ---------- */
 
   function render(){
@@ -1681,6 +1923,7 @@
 
     renderNutrition();
     renderTraining();
+    renderGoalCalculator();
   }
 
   function renderNutrition(){
@@ -2011,6 +2254,27 @@
     setTimeout(function(){ document.getElementById('foodSearchInput').focus(); }, 50);
   });
   document.getElementById('foodAdd').addEventListener('click', addSelectedFood);
+
+
+  ["goalAge","goalHeight","goalWeight","goalTarget"].forEach(function(id){
+    document.getElementById(id).addEventListener("change", function(e){
+      var map = {
+        goalAge:"age",
+        goalHeight:"height",
+        goalWeight:"weight",
+        goalTarget:"target"
+      };
+      saveGoalField(map[id], e.target.value);
+    });
+  });
+
+  document.getElementById("goalSex").addEventListener("change", function(e){
+    saveGoalField("sex", e.target.value);
+  });
+
+  document.getElementById("goalActivity").addEventListener("change", function(e){
+    saveGoalField("activity", e.target.value);
+  });
 
   /* ---------- Export / Import / Reset ---------- */
 
