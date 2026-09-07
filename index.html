@@ -875,12 +875,12 @@
       <button type="submit">Suchen</button>
     </form>
     <div class="food-mode-row" id="foodModeRow">
-      <button type="button" class="barcode-btn" id="barcodeScanBtn">📷 Barcode scannen</button>
+      <button type="button" class="barcode-btn" id="barcodeScanBtn">📱 iPhone Barcode-Scanner</button>
       <button type="button" class="barcode-btn secondary" id="barcodeManualBtn">Barcode eingeben</button>
     </div>
     <div class="barcode-panel" id="barcodePanel">
       <div id="barcodeReader"></div>
-      <div class="barcode-status" id="barcodeStatus">Halte den Barcode ruhig vor die Kamera.</div>
+      <div class="barcode-status" id="barcodeStatus">Der iPhone-Kurzbefehl scannt den Barcode und gibt ihn automatisch an die App zurück.</div>
       <form class="barcode-manual-form" id="barcodeManualForm">
         <input id="barcodeInput" inputmode="numeric" autocomplete="off" placeholder="EAN / Barcode eingeben">
         <button type="submit">Prüfen</button>
@@ -1520,7 +1520,7 @@
     if(custom) custom.classList.remove('show');
     var inp = document.getElementById('barcodeInput');
     if(inp) inp.value = '';
-    setBarcodeStatus('Barcode ruhig in den Rahmen halten – Balken und Zahlen werden gelesen.', false);
+    setBarcodeStatus('iPhone-Scanner starten oder Barcode unten manuell eingeben.', false);
   }
 
   function showBarcodePanel(manualOnly){
@@ -1633,6 +1633,74 @@
 
     if(barcodeStream && !barcodeScanLocked){
       barcodeLoopTimer = setTimeout(scanCurrentBarcodeFrame, 180);
+    }
+  }
+
+  function barcodeFromShortcutResult(value){
+    var raw = String(value || '');
+    var matches = raw.match(/\d{8,14}/g) || [];
+    for(var i=0;i<matches.length;i++){
+      if(isValidGtin(matches[i])) return matches[i];
+    }
+    var normalized = normalizeBarcode(raw);
+    if(/^\d{8,14}$/.test(normalized)) return normalized;
+    return '';
+  }
+
+  function launchNativeBarcodeShortcut(){
+    if(!foodSearchContext){
+      showToast('Bitte zuerst eine Mahlzeit auswählen');
+      return;
+    }
+
+    var baseUrl = window.location.origin + window.location.pathname;
+    var successUrl = baseUrl + '?fromShortcut=1' +
+      '&day=' + encodeURIComponent(foodSearchContext.day) +
+      '&meal=' + encodeURIComponent(foodSearchContext.meal);
+
+    var cancelUrl = baseUrl;
+    var shortcutUrl = 'shortcuts://x-callback-url/run-shortcut' +
+      '?name=' + encodeURIComponent('Gym Barcode') +
+      '&x-success=' + encodeURIComponent(successUrl) +
+      '&x-cancel=' + encodeURIComponent(cancelUrl) +
+      '&x-error=' + encodeURIComponent(cancelUrl);
+
+    setBarcodeStatus('iPhone-Scanner wird geöffnet …', false);
+    window.location.href = shortcutUrl;
+  }
+
+  async function handleNativeBarcodeCallback(){
+    try{
+      var params = new URLSearchParams(window.location.search);
+      if(params.get('fromShortcut') !== '1') return;
+
+      var day = params.get('day');
+      var meal = params.get('meal');
+      var result = params.get('result') || params.get('barcode') || '';
+      var code = barcodeFromShortcutResult(result);
+
+      // Clean URL immediately so refresh does not scan again.
+      try{ window.history.replaceState({}, document.title, window.location.pathname); }catch(e){}
+
+      if(!day || !meal){
+        showToast('Scan-Ziel konnte nicht ermittelt werden');
+        return;
+      }
+
+      openFoodSearch(day, meal);
+      showBarcodePanel(false);
+
+      if(!code){
+        setBarcodeStatus('Kein gültiger Barcode vom iPhone-Scanner erhalten. Du kannst ihn unten manuell eingeben.', true);
+        return;
+      }
+
+      document.getElementById('barcodeInput').value = code;
+      setBarcodeStatus('Barcode erkannt: ' + code, false);
+      await lookupBarcode(code);
+    }catch(err){
+      console.error('Native barcode callback failed', err);
+      showToast('Barcode konnte nicht übernommen werden');
     }
   }
 
@@ -2281,7 +2349,7 @@
 
 
 
-  document.getElementById('barcodeScanBtn').addEventListener('click', startBarcodeScanner);
+  document.getElementById('barcodeScanBtn').addEventListener('click', launchNativeBarcodeShortcut);
   document.getElementById('barcodeManualBtn').addEventListener('click', function(){
     stopBarcodeScanner();
     showBarcodePanel(true);
@@ -2374,6 +2442,7 @@
 
   render();
   initCloudSync();
+  handleNativeBarcodeCallback();
 })();
 </script>
 </body>
