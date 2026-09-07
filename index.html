@@ -1489,6 +1489,117 @@
     .week-day{padding:6px 2px;}
   }
 
+
+  /* ---------- Verwalten: Produkte / Mahlzeiten / Training kopieren ---------- */
+  .manage-section{
+    margin-top:12px;
+    padding:12px;
+    border:1px solid var(--line);
+    border-radius:14px;
+    background:rgba(255,255,255,.025);
+  }
+  .manage-title{
+    font-size:11px;
+    font-weight:850;
+    color:var(--ink-soft);
+    margin-bottom:8px;
+  }
+  .manage-list{
+    display:flex;
+    flex-direction:column;
+    gap:7px;
+  }
+  .manage-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:10px;
+    padding:9px 10px;
+    border:1px solid rgba(255,255,255,.05);
+    border-radius:11px;
+    background:rgba(255,255,255,.02);
+  }
+  .manage-row-main{min-width:0;}
+  .manage-row-main strong{
+    display:block;
+    font-size:11.5px;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  .manage-row-main span{
+    display:block;
+    margin-top:3px;
+    color:var(--ink-soft);
+    font-size:9.5px;
+  }
+  .manage-actions{
+    display:flex;
+    gap:6px;
+    flex:0 0 auto;
+  }
+  .manage-actions button{
+    border:1px solid var(--line);
+    background:rgba(255,255,255,.035);
+    color:var(--ink);
+    border-radius:9px;
+    padding:7px 8px;
+    font-size:10px;
+    font-weight:800;
+  }
+  .manage-actions .danger{
+    color:#ff9d9d;
+    border-color:rgba(255,120,120,.18);
+    background:rgba(255,120,120,.04);
+  }
+  .copy-own-day-wrap{
+    margin:10px 0 2px;
+    padding:10px;
+    border:1px solid rgba(255,255,255,.06);
+    border-radius:12px;
+    background:rgba(255,255,255,.02);
+  }
+  .copy-own-day-wrap label{
+    display:block;
+    font-size:10px;
+    color:var(--ink-soft);
+    margin-bottom:6px;
+  }
+  .copy-own-day-row{
+    display:grid;
+    grid-template-columns:1fr auto;
+    gap:7px;
+  }
+  .copy-own-day-row select{
+    min-width:0;
+    border:1px solid var(--line);
+    background:#0d131c;
+    color:var(--ink);
+    border-radius:10px;
+    padding:9px 10px;
+    font-size:11px;
+  }
+  .copy-own-day-row button{
+    border:1px solid rgba(98,224,184,.25);
+    background:rgba(98,224,184,.07);
+    color:#91ebc9;
+    border-radius:10px;
+    padding:9px 10px;
+    font-size:10.5px;
+    font-weight:800;
+  }
+  .copy-week-btn{
+    width:100%;
+    margin:0 0 12px;
+    border:1px solid rgba(118,185,255,.28);
+    background:rgba(118,185,255,.08);
+    color:#a9d2ff;
+    border-radius:12px;
+    padding:11px 12px;
+    font-size:11.5px;
+    font-weight:850;
+  }
+
 </style>
 </head>
 <body class="app-locked">
@@ -1661,12 +1772,29 @@
         </div>
       </div>
 
+      <button type="button" class="copy-week-btn" id="copyTrainingWeekBtn">Komplette Trainingswoche übernehmen</button>
+
       <div id="trainingList"></div>
     </section>
 
     <!-- Einstellungen -->
     <section class="view" id="view-einstellungen">
       <div class="view-head"><h2>Einstellungen</h2></div>
+
+      <div class="settings-block">
+        <h3>Eigene Inhalte verwalten</h3>
+        <p>Hier kannst du selbst angelegte Lebensmittel und gespeicherte Mahlzeiten bearbeiten oder löschen.</p>
+
+        <div class="manage-section">
+          <div class="manage-title">Eigene Lebensmittel</div>
+          <div class="manage-list" id="customProductsManageList"></div>
+        </div>
+
+        <div class="manage-section">
+          <div class="manage-title">Gespeicherte Mahlzeiten</div>
+          <div class="manage-list" id="savedMealsManageList"></div>
+        </div>
+      </div>
 
       <div class="settings-block">
         <h3>Aktuelles Profil</h3>
@@ -2467,6 +2595,171 @@
     render();
     if(forToday) renderDashboard();
     showToast("Gespeicherte Mahlzeit hinzugefügt");
+  }
+
+
+  async function deleteCustomProductById(productId){
+    var products = await loadCustomProducts();
+    if(!products[productId]) return;
+    delete products[productId];
+
+    await apiRequest('duofit_plans?on_conflict=app_key,profile', {
+      method:'POST',
+      headers:{'Prefer':'resolution=merge-duplicates,return=minimal'},
+      body:JSON.stringify({
+        app_key:SYNC_APP_KEY,
+        profile:CUSTOM_PRODUCTS_PROFILE,
+        data:{products:products},
+        updated_at:new Date().toISOString()
+      })
+    });
+  }
+
+  async function updateCustomProductById(productId, updatedProduct){
+    var products = await loadCustomProducts();
+    if(!products[productId]) return;
+
+    products[productId] = Object.assign({}, products[productId], updatedProduct, {id:productId});
+
+    await apiRequest('duofit_plans?on_conflict=app_key,profile', {
+      method:'POST',
+      headers:{'Prefer':'resolution=merge-duplicates,return=minimal'},
+      body:JSON.stringify({
+        app_key:SYNC_APP_KEY,
+        profile:CUSTOM_PRODUCTS_PROFILE,
+        data:{products:products},
+        updated_at:new Date().toISOString()
+      })
+    });
+  }
+
+  async function renderCustomProductsManager(){
+    var list = document.getElementById("customProductsManageList");
+    if(!list) return;
+
+    var productsMap = await loadCustomProducts();
+    var products = Object.keys(productsMap).map(function(k){ return productsMap[k]; });
+
+    if(!products.length){
+      list.innerHTML = '<div class="dash-empty">Noch keine eigenen Lebensmittel gespeichert.</div>';
+      return;
+    }
+
+    products.sort(function(a,b){ return String(a.name||"").localeCompare(String(b.name||""), "de"); });
+
+    list.innerHTML = products.map(function(p){
+      return '<div class="manage-row">' +
+        '<div class="manage-row-main">' +
+          '<strong>' + escapeHtml(p.name || "Produkt") + '</strong>' +
+          '<span>' + formatMacro(p.kcal100 || 0) + ' kcal · E ' + formatMacro(p.protein100 || 0) +
+          ' · KH ' + formatMacro(p.carbs100 || 0) + ' · F ' + formatMacro(p.fat100 || 0) + ' / 100 g</span>' +
+        '</div>' +
+        '<div class="manage-actions">' +
+          '<button type="button" data-edit-custom-product="' + escapeHtml(p.id) + '">Bearbeiten</button>' +
+          '<button type="button" class="danger" data-delete-custom-product="' + escapeHtml(p.id) + '">Löschen</button>' +
+        '</div>' +
+      '</div>';
+    }).join("");
+  }
+
+  async function editCustomProduct(productId){
+    var products = await loadCustomProducts();
+    var p = products[productId];
+    if(!p) return;
+
+    var name = prompt("Produktname:", p.name || "");
+    if(name === null) return;
+    name = name.trim();
+    if(!name) return showToast("Produktname darf nicht leer sein");
+
+    var protein = prompt("Eiweiß pro 100 g:", String(p.protein100 || 0));
+    if(protein === null) return;
+    var carbs = prompt("Kohlenhydrate pro 100 g:", String(p.carbs100 || 0));
+    if(carbs === null) return;
+    var fat = prompt("Fett pro 100 g:", String(p.fat100 || 0));
+    if(fat === null) return;
+
+    var pr = goalNumber(protein);
+    var ca = goalNumber(carbs);
+    var fa = goalNumber(fat);
+    var kcal = round1(pr*4 + ca*4 + fa*9);
+
+    await updateCustomProductById(productId, {
+      name:name,
+      protein100:round1(pr),
+      carbs100:round1(ca),
+      fat100:round1(fa),
+      kcal100:kcal
+    });
+
+    await renderCustomProductsManager();
+    showToast("Produkt aktualisiert");
+  }
+
+  async function removeCustomProduct(productId){
+    var products = await loadCustomProducts();
+    var p = products[productId];
+    if(!p) return;
+    if(!confirm('Produkt "' + (p.name || "Produkt") + '" wirklich löschen?')) return;
+
+    await deleteCustomProductById(productId);
+    await renderCustomProductsManager();
+    showToast("Produkt gelöscht");
+  }
+
+  function renderSavedMealsManager(){
+    var list = document.getElementById("savedMealsManageList");
+    if(!list) return;
+
+    var data = currentData();
+    var meals = Array.isArray(data.savedMeals) ? data.savedMeals : [];
+
+    if(!meals.length){
+      list.innerHTML = '<div class="dash-empty">Noch keine Mahlzeiten gespeichert.</div>';
+      return;
+    }
+
+    list.innerHTML = meals.map(function(meal){
+      var totals = macroTotals(meal.items || []);
+      return '<div class="manage-row">' +
+        '<div class="manage-row-main">' +
+          '<strong>' + escapeHtml(meal.name || "Mahlzeit") + '</strong>' +
+          '<span>' + (meal.items || []).length + ' Lebensmittel · ' + formatMacro(totals.kcal) + ' kcal</span>' +
+        '</div>' +
+        '<div class="manage-actions">' +
+          '<button type="button" data-edit-saved-meal="' + escapeHtml(meal.id) + '">Bearbeiten</button>' +
+          '<button type="button" class="danger" data-delete-saved-meal="' + escapeHtml(meal.id) + '">Löschen</button>' +
+        '</div>' +
+      '</div>';
+    }).join("");
+  }
+
+  function editSavedMeal(mealId){
+    var data = currentData();
+    var meal = (data.savedMeals || []).find(function(m){ return m.id === mealId; });
+    if(!meal) return;
+
+    var name = prompt("Name der Mahlzeit:", meal.name || "");
+    if(name === null) return;
+    name = name.trim();
+    if(!name) return showToast("Name darf nicht leer sein");
+
+    meal.name = name;
+    saveData(state.profile, data);
+    render();
+    showToast("Mahlzeit aktualisiert");
+  }
+
+  function deleteSavedMeal(mealId){
+    var data = currentData();
+    var meal = (data.savedMeals || []).find(function(m){ return m.id === mealId; });
+    if(!meal) return;
+    if(!confirm('Mahlzeit "' + (meal.name || "Mahlzeit") + '" wirklich löschen?')) return;
+
+    data.savedMeals = (data.savedMeals || []).filter(function(m){ return m.id !== mealId; });
+    saveData(state.profile, data);
+    render();
+    showToast("Mahlzeit gelöscht");
   }
 
   function openFoodSearch(dayKey, mealKey){
@@ -3724,6 +4017,85 @@
   }
 
 
+
+  function cloneTrainingDayPlan(sourceDay){
+    return {
+      type: sourceDay && sourceDay.type ? sourceDay.type : null,
+      exercises: (sourceDay && sourceDay.exercises ? sourceDay.exercises : []).map(function(ex){
+        var count = Math.max(1, Math.min(10, parseInt(ex.sets,10) || 1));
+        var details = [];
+        for(var i=0;i<count;i++) details.push({reps:"",weight:"",done:false});
+        return {
+          id:uid(),
+          name:ex.name,
+          sets:count,
+          setDetails:details
+        };
+      })
+    };
+  }
+
+  function copyOwnTrainingDay(sourceDayKey, targetDayKey){
+    if(!sourceDayKey || sourceDayKey === targetDayKey){
+      showToast("Bitte einen anderen Quelltag auswählen");
+      return;
+    }
+
+    var data = currentData();
+    var sourceDay = data.training.days[sourceDayKey];
+    if(!sourceDay || !sourceDay.type){
+      showToast("Am Quelltag ist kein Trainingsplan vorhanden");
+      return;
+    }
+
+    data.training.days[targetDayKey] = cloneTrainingDayPlan(sourceDay);
+    saveData(state.profile, data);
+    state.openCards["t-" + targetDayKey] = true;
+    render();
+    showToast("Trainingstag kopiert");
+  }
+
+  async function copyFullTrainingWeekFromOtherProfile(){
+    var otherProfile = state.profile === "Julien" ? "Soraia" : "Julien";
+
+    try{
+      if(syncReady){
+        var row = await fetchCloudProfile(otherProfile);
+        if(row && row.data){
+          localStorage.setItem(storageKey(otherProfile), JSON.stringify(row.data));
+          lastRemoteSnapshot[otherProfile] = JSON.stringify(row.data);
+        }
+      }
+    }catch(err){
+      console.warn("Could not refresh other profile before week copy", err);
+    }
+
+    var sourceData = loadData(otherProfile);
+    var targetData = currentData();
+
+    var hasAny = DAYS.some(function(d){
+      var sd = sourceData.training.days[d.key];
+      return sd && sd.type;
+    });
+
+    if(!hasAny){
+      showToast(otherProfile + " hat noch keine Trainingswoche");
+      return;
+    }
+
+    if(!confirm("Komplette Trainingswoche von " + otherProfile + " übernehmen? Deine aktuellen Trainingspläne werden ersetzt.")){
+      return;
+    }
+
+    DAYS.forEach(function(d){
+      targetData.training.days[d.key] = cloneTrainingDayPlan(sourceData.training.days[d.key] || {type:null,exercises:[]});
+    });
+
+    saveData(state.profile, targetData);
+    render();
+    showToast("Trainingswoche von " + otherProfile + " übernommen");
+  }
+
   async function copyTrainingDayFromOtherProfile(dayKey){
     var otherProfile = state.profile === "Julien" ? "Soraia" : "Julien";
 
@@ -3843,6 +4215,8 @@
     renderNutrition();
     renderTraining();
     renderGoalCalculator();
+    renderSavedMealsManager();
+    renderCustomProductsManager();
   }
 
   function renderNutrition(){
@@ -4009,6 +4383,18 @@
               'Trainingstag von ' + (state.profile === "Julien" ? "Soraia" : "Julien") + ' übernehmen' +
             '</button>' +
           '</div>' +
+          '<div class="copy-own-day-wrap">' +
+            '<label>Eigenen Trainingstag auf ' + d.label + ' kopieren</label>' +
+            '<div class="copy-own-day-row">' +
+              '<select data-copy-source-for="' + d.key + '">' +
+                '<option value="">Quelltag wählen</option>' +
+                DAYS.filter(function(x){ return x.key !== d.key; }).map(function(x){
+                  return '<option value="' + x.key + '">' + x.label + '</option>';
+                }).join("") +
+              '</select>' +
+              '<button type="button" data-action="copyOwnTrainingDay" data-day="' + d.key + '">Kopieren</button>' +
+            '</div>' +
+          '</div>' +
           bodyExtra +
         '</div>' +
       '</div>';
@@ -4140,6 +4526,14 @@
     var copyTrainingBtn = e.target.closest('[data-action="copyTrainingDay"]');
     if(copyTrainingBtn){
       copyTrainingDayFromOtherProfile(copyTrainingBtn.dataset.day);
+      return;
+    }
+
+    var copyOwnBtn = e.target.closest('[data-action="copyOwnTrainingDay"]');
+    if(copyOwnBtn){
+      var target = copyOwnBtn.dataset.day;
+      var select = document.querySelector('[data-copy-source-for="' + target + '"]');
+      copyOwnTrainingDay(select ? select.value : "", target);
       return;
     }
 
@@ -4311,6 +4705,32 @@
   window.addEventListener("resize", function(){
     if(state.view === "heute") drawWeightChart();
   });
+
+  document.getElementById("customProductsManageList").addEventListener("click", function(e){
+    var edit = e.target.closest("[data-edit-custom-product]");
+    if(edit){
+      editCustomProduct(edit.dataset.editCustomProduct);
+      return;
+    }
+    var del = e.target.closest("[data-delete-custom-product]");
+    if(del){
+      removeCustomProduct(del.dataset.deleteCustomProduct);
+    }
+  });
+
+  document.getElementById("savedMealsManageList").addEventListener("click", function(e){
+    var edit = e.target.closest("[data-edit-saved-meal]");
+    if(edit){
+      editSavedMeal(edit.dataset.editSavedMeal);
+      return;
+    }
+    var del = e.target.closest("[data-delete-saved-meal]");
+    if(del){
+      deleteSavedMeal(del.dataset.deleteSavedMeal);
+    }
+  });
+
+  document.getElementById("copyTrainingWeekBtn").addEventListener("click", copyFullTrainingWeekFromOtherProfile);
 
   document.getElementById("saveQuickWeight").addEventListener("click", saveTodayWeight);
   document.getElementById("quickWeight").addEventListener("keydown", function(e){
