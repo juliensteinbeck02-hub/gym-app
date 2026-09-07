@@ -899,7 +899,7 @@
 </script>
 
 
-<script src="https://cdn.jsdelivr.net/npm/@ericblade/quagga2@1.12.1/dist/quagga.min.js"></script>
+<script src="https://unpkg.com/@taluks/html5-qrcode@2.4.0/minified/html5-qrcode.min.js"></script>
 
 
 <script>
@@ -918,7 +918,7 @@
   var selectedFood = null;
   var barcodeScanner = null;
   var barcodeScanLocked = false;
-  var quaggaDetectedHandler = null;
+  var html5BarcodeScanner = null;
   var pendingBarcode = "";
   var CUSTOM_PRODUCTS_PROFILE = "__products__";
 
@@ -1346,98 +1346,119 @@
     showBarcodePanel(false);
     await stopBarcodeScanner();
 
-    if(typeof Quagga === 'undefined'){
+    if(typeof Html5Qrcode === 'undefined'){
       setBarcodeStatus('Scanner konnte nicht geladen werden. Du kannst den Barcode unten manuell eingeben.', true);
       return;
     }
 
     try{
       barcodeScanLocked = false;
-      setBarcodeStatus('Kamera wird gestartet …', false);
+      setBarcodeStatus('Kamera und Barcode-Erkennung werden gestartet …', false);
 
-      await new Promise(function(resolve, reject){
-        Quagga.init({
-          inputStream: {
-            name: 'Live',
-            type: 'LiveStream',
-            target: document.getElementById('barcodeReader'),
-            constraints: {
-              facingMode: 'environment',
-              width: { ideal: 1280 },
-              height: { ideal: 720 }
-            },
-            area: {
-              top: '12%',
-              right: '4%',
-              left: '4%',
-              bottom: '12%'
-            }
-          },
-          locator: {
-            patchSize: 'medium',
-            halfSample: true
-          },
-          numOfWorkers: Math.min(4, navigator.hardwareConcurrency || 2),
-          frequency: 12,
-          decoder: {
-            readers: [
-              'ean_reader',
-              'ean_8_reader',
-              'upc_reader',
-              'upc_e_reader',
-              'code_128_reader'
-            ]
-          },
-          locate: true
-        }, function(err){
-          if(err) reject(err);
-          else resolve();
-        });
+      var formats = [];
+      if(typeof Html5QrcodeSupportedFormats !== 'undefined'){
+        formats = [
+          Html5QrcodeSupportedFormats.EAN_13,
+          Html5QrcodeSupportedFormats.EAN_8,
+          Html5QrcodeSupportedFormats.UPC_A,
+          Html5QrcodeSupportedFormats.UPC_E,
+          Html5QrcodeSupportedFormats.CODE_128
+        ];
+      }
+
+      html5BarcodeScanner = new Html5Qrcode('barcodeReader', {
+        formatsToSupport: formats.length ? formats : undefined,
+        verbose: false,
+        zxingWasm: { loadMode: 'cdn' }
       });
+      barcodeScanner = 'html5qrcode-wasm';
 
-      barcodeScanner = 'quagga';
-
-      quaggaDetectedHandler = async function(result){
-        if(barcodeScanLocked || !result || !result.codeResult || !result.codeResult.code) return;
-
-        var code = normalizeBarcode(result.codeResult.code);
-        if(!code) return;
-
-        // EAN/UPC sanity: require digits and a plausible length.
-        if(!/^\d{8,14}$/.test(code)) return;
-
-        barcodeScanLocked = true;
-        setBarcodeStatus('Barcode erkannt: ' + code, false);
-
-        try{ await stopBarcodeScanner(); }catch(e){}
-        await lookupBarcode(code);
+      var config = {
+        fps: 12,
+        aspectRatio: 1.777778,
+        disableFlip: true,
+        qrbox: function(viewfinderWidth, viewfinderHeight){
+          var width = Math.floor(Math.min(viewfinderWidth * 0.88, 420));
+          var height = Math.floor(Math.min(viewfinderHeight * 0.34, 150));
+          return { width: width, height: height };
+        }
       };
 
-      Quagga.onDetected(quaggaDetectedHandler);
-      Quagga.start();
-      setBarcodeStatus('Halte den Barcode möglichst gerade und fülle den Rahmen damit aus.', false);
+      await html5BarcodeScanner.start(
+        { facingMode: { exact: 'environment' } },
+        config,
+        async function(decodedText){
+          if(barcodeScanLocked) return;
+          var code = normalizeBarcode(decodedText);
+          if(!/^\d{8,14}$/.test(code)) return;
+          barcodeScanLocked = true;
+          setBarcodeStatus('Barcode erkannt: ' + code, false);
+          try{ await stopBarcodeScanner(); }catch(e){}
+          await lookupBarcode(code);
+        },
+        function(){}
+      );
+
+      setBarcodeStatus('Barcode waagerecht in den Rahmen halten und kurz ruhig bleiben.', false);
     }catch(err){
       console.error('Barcode camera failed', err);
-      setBarcodeStatus('Kamera konnte nicht gestartet werden. Erlaube den Kamerazugriff oder gib den Barcode unten ein.', true);
+      try{
+        if(html5BarcodeScanner){ try{ await html5BarcodeScanner.clear(); }catch(e){} }
+        html5BarcodeScanner = new Html5Qrcode('barcodeReader', {
+          formatsToSupport: (typeof Html5QrcodeSupportedFormats !== 'undefined') ? [
+            Html5QrcodeSupportedFormats.EAN_13,
+            Html5QrcodeSupportedFormats.EAN_8,
+            Html5QrcodeSupportedFormats.UPC_A,
+            Html5QrcodeSupportedFormats.UPC_E,
+            Html5QrcodeSupportedFormats.CODE_128
+          ] : undefined,
+          verbose: false,
+          zxingWasm: { loadMode: 'cdn' }
+        });
+        barcodeScanner = 'html5qrcode-wasm';
+        await html5BarcodeScanner.start(
+          { facingMode: 'environment' },
+          {
+            fps: 12,
+            disableFlip: true,
+            qrbox: function(w,h){
+              return { width: Math.floor(Math.min(w * 0.88, 420)), height: Math.floor(Math.min(h * 0.34, 150)) };
+            }
+          },
+          async function(decodedText){
+            if(barcodeScanLocked) return;
+            var code = normalizeBarcode(decodedText);
+            if(!/^\d{8,14}$/.test(code)) return;
+            barcodeScanLocked = true;
+            setBarcodeStatus('Barcode erkannt: ' + code, false);
+            try{ await stopBarcodeScanner(); }catch(e){}
+            await lookupBarcode(code);
+          },
+          function(){}
+        );
+        setBarcodeStatus('Barcode waagerecht in den Rahmen halten und kurz ruhig bleiben.', false);
+      }catch(fallbackErr){
+        console.error('Barcode camera fallback failed', fallbackErr);
+        barcodeScanner = null;
+        html5BarcodeScanner = null;
+        setBarcodeStatus('Scanner konnte nicht gestartet werden. Du kannst den Barcode unten manuell eingeben.', true);
+      }
     }
   }
 
   async function stopBarcodeScanner(){
     barcodeScanLocked = false;
-
-    if(barcodeScanner === 'quagga' && typeof Quagga !== 'undefined'){
-      try{
-        if(quaggaDetectedHandler) Quagga.offDetected(quaggaDetectedHandler);
-      }catch(e){}
-      try{ Quagga.stop(); }catch(e){}
-      quaggaDetectedHandler = null;
+    if(barcodeScanner === 'html5qrcode-wasm' && html5BarcodeScanner){
+      try{ if(html5BarcodeScanner.isScanning){ await html5BarcodeScanner.stop(); } }catch(e){}
+      try{ await html5BarcodeScanner.clear(); }catch(e){}
+      html5BarcodeScanner = null;
       barcodeScanner = null;
       var reader = document.getElementById('barcodeReader');
       if(reader) reader.innerHTML = '';
       return;
     }
-
     barcodeScanner = null;
+    html5BarcodeScanner = null;
   }
 
   async function fetchCustomProduct(barcode){
