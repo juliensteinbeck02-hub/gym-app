@@ -595,6 +595,126 @@
   .food-back{background:rgba(255,255,255,.04);color:var(--ink);}
   .food-add{background:linear-gradient(135deg,#62e0b8,#7de8c5);color:#0d1713;border-color:transparent!important;}
 
+
+
+  /* ---------- Barcode Scanner ---------- */
+  .food-mode-row{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:8px;
+    margin-bottom:12px;
+  }
+  .barcode-btn{
+    border:1px solid rgba(98,224,184,.24);
+    background:rgba(98,224,184,.08);
+    color:#9af0cf;
+    border-radius:12px;
+    padding:11px 12px;
+    font-size:12.5px;
+    font-weight:800;
+    cursor:pointer;
+  }
+  .barcode-btn.secondary{
+    border-color:var(--line);
+    background:rgba(255,255,255,.035);
+    color:var(--ink);
+  }
+  .barcode-panel{
+    display:none;
+    margin-bottom:12px;
+    padding:12px;
+    border:1px solid var(--line);
+    border-radius:16px;
+    background:rgba(255,255,255,.025);
+  }
+  .barcode-panel.show{display:block;}
+  #barcodeReader{
+    width:100%;
+    overflow:hidden;
+    border-radius:14px;
+    background:#05080d;
+    min-height:220px;
+  }
+  #barcodeReader video{border-radius:14px!important;}
+  .barcode-status{
+    min-height:18px;
+    margin:10px 2px 0;
+    color:var(--ink-soft);
+    font-size:12px;
+    line-height:1.45;
+  }
+  .barcode-manual-form{
+    display:flex;
+    gap:8px;
+    margin-top:10px;
+  }
+  .barcode-manual-form input{
+    flex:1;
+    min-width:0;
+    border:1px solid var(--line);
+    background:#0c121b;
+    color:var(--ink);
+    border-radius:11px;
+    padding:10px 11px;
+    font-size:14px;
+    outline:none;
+  }
+  .barcode-manual-form button{
+    border:none;
+    border-radius:11px;
+    padding:0 13px;
+    background:#eef3f9;
+    color:#111821;
+    font-weight:800;
+    cursor:pointer;
+  }
+  .custom-food-form{
+    display:none;
+    padding:14px;
+    margin-top:10px;
+    border:1px solid rgba(255,179,71,.20);
+    border-radius:16px;
+    background:rgba(255,179,71,.045);
+  }
+  .custom-food-form.show{display:block;}
+  .custom-food-form h4{margin:0 0 4px;font-size:15px;}
+  .custom-food-form p{margin:0 0 12px;color:var(--ink-soft);font-size:11.5px;line-height:1.45;}
+  .custom-food-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:8px;
+  }
+  .custom-food-grid label{
+    display:flex;
+    flex-direction:column;
+    gap:5px;
+    color:var(--ink-soft);
+    font-size:10.5px;
+  }
+  .custom-food-grid label.full{grid-column:1 / -1;}
+  .custom-food-grid input{
+    width:100%;
+    border:1px solid var(--line);
+    background:#0c121b;
+    color:var(--ink);
+    border-radius:11px;
+    padding:10px 11px;
+    font-size:14px;
+    outline:none;
+  }
+  .custom-save{
+    width:100%;
+    margin-top:10px;
+    border:none;
+    border-radius:12px;
+    padding:11px 12px;
+    background:linear-gradient(135deg,#62e0b8,#7de8c5);
+    color:#0d1713;
+    font-size:13px;
+    font-weight:800;
+    cursor:pointer;
+  }
+
 </style>
 </head>
 <body class="app-locked">
@@ -701,6 +821,31 @@
       <input id="foodSearchInput" type="search" placeholder="z. B. Skyr, Reis, Proteinriegel" autocomplete="off" required>
       <button type="submit">Suchen</button>
     </form>
+    <div class="food-mode-row" id="foodModeRow">
+      <button type="button" class="barcode-btn" id="barcodeScanBtn">📷 Barcode scannen</button>
+      <button type="button" class="barcode-btn secondary" id="barcodeManualBtn">Barcode eingeben</button>
+    </div>
+    <div class="barcode-panel" id="barcodePanel">
+      <div id="barcodeReader"></div>
+      <div class="barcode-status" id="barcodeStatus">Halte den Barcode ruhig vor die Kamera.</div>
+      <form class="barcode-manual-form" id="barcodeManualForm">
+        <input id="barcodeInput" inputmode="numeric" autocomplete="off" placeholder="EAN / Barcode eingeben">
+        <button type="submit">Prüfen</button>
+      </form>
+    </div>
+    <form class="custom-food-form" id="customFoodForm">
+      <h4>Produkt nicht gefunden</h4>
+      <p>Trag die Werte einmal pro 100 g ein. Der Barcode wird gespeichert und beim nächsten Scan automatisch erkannt.</p>
+      <div class="custom-food-grid">
+        <label class="full">Produktname<input id="customFoodName" required placeholder="z. B. Protein Pudding"></label>
+        <label class="full">Marke (optional)<input id="customFoodBrand" placeholder="Marke"></label>
+        <label>kcal / 100 g<input id="customFoodKcal" type="number" inputmode="decimal" min="0" step="0.1" required></label>
+        <label>Eiweiß / 100 g<input id="customFoodProtein" type="number" inputmode="decimal" min="0" step="0.1" value="0"></label>
+        <label>KH / 100 g<input id="customFoodCarbs" type="number" inputmode="decimal" min="0" step="0.1" value="0"></label>
+        <label>Fett / 100 g<input id="customFoodFat" type="number" inputmode="decimal" min="0" step="0.1" value="0"></label>
+      </div>
+      <button class="custom-save" type="submit">Produkt speichern</button>
+    </form>
     <p class="food-help">Wähle ein Produkt aus, gib die gegessene Menge in Gramm ein und die App berechnet Kalorien und Makros automatisch.</p>
     <div class="food-results" id="foodResults"></div>
     <div class="food-selected" id="foodSelected">
@@ -746,6 +891,9 @@
 </script>
 
 
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+
+
 <script>
 (function(){
   "use strict";
@@ -760,6 +908,10 @@
   var lastRemoteSnapshot = {};
   var foodSearchContext = null;
   var selectedFood = null;
+  var barcodeScanner = null;
+  var barcodeScanLocked = false;
+  var pendingBarcode = "";
+  var CUSTOM_PRODUCTS_PROFILE = "__products__";
 
   var PROFILES = ["Julien", "Soraia"];
   var MEALS = [
@@ -1123,6 +1275,7 @@
     selectedFood = null;
     document.getElementById('foodResults').innerHTML = '';
     document.getElementById('foodSelected').classList.remove('show');
+    resetBarcodeUI();
     document.getElementById('foodSearchForm').style.display = 'flex';
     document.querySelector('.food-help').style.display = 'block';
     var modal = document.getElementById('foodModal');
@@ -1134,11 +1287,243 @@
   }
 
   function closeFoodSearch(){
+    stopBarcodeScanner();
     var modal = document.getElementById('foodModal');
     modal.classList.remove('open');
     modal.setAttribute('aria-hidden','true');
     foodSearchContext = null;
     selectedFood = null;
+  }
+
+
+  function normalizeBarcode(value){
+    return String(value || '').replace(/[^0-9]/g,'').trim();
+  }
+
+  function setBarcodeStatus(msg, isError){
+    var el = document.getElementById('barcodeStatus');
+    if(!el) return;
+    el.textContent = msg;
+    el.style.color = isError ? '#ffaaa3' : 'var(--ink-soft)';
+  }
+
+  function resetBarcodeUI(){
+    pendingBarcode = '';
+    barcodeScanLocked = false;
+    var panel = document.getElementById('barcodePanel');
+    var custom = document.getElementById('customFoodForm');
+    if(panel) panel.classList.remove('show');
+    if(custom) custom.classList.remove('show');
+    var inp = document.getElementById('barcodeInput');
+    if(inp) inp.value = '';
+    setBarcodeStatus('Halte den Barcode ruhig vor die Kamera.', false);
+  }
+
+  async function stopBarcodeScanner(){
+    barcodeScanLocked = false;
+    if(!barcodeScanner) return;
+    try{
+      if(barcodeScanner.isScanning) await barcodeScanner.stop();
+    }catch(e){}
+    try{ await barcodeScanner.clear(); }catch(e){}
+    barcodeScanner = null;
+  }
+
+  function showBarcodePanel(manualOnly){
+    selectedFood = null;
+    document.getElementById('foodSelected').classList.remove('show');
+    document.getElementById('customFoodForm').classList.remove('show');
+    document.getElementById('foodResults').innerHTML = '';
+    document.getElementById('foodSearchForm').style.display = 'none';
+    document.querySelector('.food-help').style.display = 'none';
+    document.getElementById('barcodePanel').classList.add('show');
+    if(manualOnly){
+      setBarcodeStatus('Barcode eingeben und auf „Prüfen“ tippen.', false);
+      setTimeout(function(){ document.getElementById('barcodeInput').focus(); }, 60);
+    }
+  }
+
+  async function startBarcodeScanner(){
+    showBarcodePanel(false);
+    await stopBarcodeScanner();
+
+    if(typeof Html5Qrcode === 'undefined'){
+      setBarcodeStatus('Scanner konnte nicht geladen werden. Du kannst den Barcode unten manuell eingeben.', true);
+      return;
+    }
+
+    try{
+      barcodeScanner = new Html5Qrcode('barcodeReader', {
+        formatsToSupport: [
+          Html5QrcodeSupportedFormats.EAN_13,
+          Html5QrcodeSupportedFormats.EAN_8,
+          Html5QrcodeSupportedFormats.UPC_A,
+          Html5QrcodeSupportedFormats.UPC_E,
+          Html5QrcodeSupportedFormats.CODE_128
+        ],
+        useBarCodeDetectorIfSupported: true
+      });
+
+      setBarcodeStatus('Kamera wird gestartet …', false);
+      await barcodeScanner.start(
+        { facingMode: 'environment' },
+        { fps: 10, qrbox: { width: 280, height: 120 }, aspectRatio: 1.777778 },
+        async function(decodedText){
+          if(barcodeScanLocked) return;
+          var code = normalizeBarcode(decodedText);
+          if(!code) return;
+          barcodeScanLocked = true;
+          try{ await stopBarcodeScanner(); }catch(e){}
+          await lookupBarcode(code);
+        },
+        function(){}
+      );
+      setBarcodeStatus('Halte den Barcode mittig vor die Kamera.', false);
+    }catch(err){
+      console.error('Barcode camera failed', err);
+      setBarcodeStatus('Kamera konnte nicht gestartet werden. Erlaube den Kamerazugriff oder gib den Barcode unten ein.', true);
+    }
+  }
+
+  async function fetchCustomProduct(barcode){
+    try{
+      var path = 'duofit_plans?select=data' +
+        '&app_key=eq.' + encoded(SYNC_APP_KEY) +
+        '&profile=eq.' + encoded(CUSTOM_PRODUCTS_PROFILE) +
+        '&limit=1';
+      var rows = await apiRequest(path, {method:'GET'});
+      var db = rows && rows.length && rows[0].data ? rows[0].data : {};
+      var products = db.products || {};
+      return products[barcode] || null;
+    }catch(err){
+      console.error('Custom product lookup failed', err);
+      return null;
+    }
+  }
+
+  async function saveCustomProduct(product){
+    var path = 'duofit_plans?select=data' +
+      '&app_key=eq.' + encoded(SYNC_APP_KEY) +
+      '&profile=eq.' + encoded(CUSTOM_PRODUCTS_PROFILE) +
+      '&limit=1';
+    var rows = await apiRequest(path, {method:'GET'});
+    var db = rows && rows.length && rows[0].data ? rows[0].data : {products:{}};
+    if(!db.products || typeof db.products !== 'object') db.products = {};
+    db.products[product.code] = product;
+
+    await apiRequest('duofit_plans?on_conflict=app_key,profile', {
+      method:'POST',
+      headers:{'Prefer':'resolution=merge-duplicates,return=minimal'},
+      body:JSON.stringify({
+        app_key:SYNC_APP_KEY,
+        profile:CUSTOM_PRODUCTS_PROFILE,
+        data:db,
+        updated_at:new Date().toISOString()
+      })
+    });
+  }
+
+  function customProductToSelected(product){
+    selectedFood = {
+      code: product.code || '',
+      name: product.name || 'Produkt',
+      brand: product.brand || '',
+      kcal100: numberOrZero(product.kcal100),
+      protein100: numberOrZero(product.protein100),
+      carbs100: numberOrZero(product.carbs100),
+      fat100: numberOrZero(product.fat100),
+      source: 'custom'
+    };
+    showSelectedFood();
+  }
+
+  function showSelectedFood(){
+    document.getElementById('selectedFoodName').textContent = selectedFood.name;
+    document.getElementById('selectedFoodBrand').textContent = selectedFood.brand;
+    document.getElementById('foodAmount').value = '100';
+    document.getElementById('foodResults').innerHTML = '';
+    document.getElementById('foodSearchForm').style.display = 'none';
+    document.querySelector('.food-help').style.display = 'none';
+    document.getElementById('barcodePanel').classList.remove('show');
+    document.getElementById('customFoodForm').classList.remove('show');
+    document.getElementById('foodSelected').classList.add('show');
+    updateSelectedPreview();
+  }
+
+  async function lookupBarcode(rawCode){
+    var code = normalizeBarcode(rawCode);
+    if(!code){
+      setBarcodeStatus('Bitte einen gültigen Barcode eingeben.', true);
+      return;
+    }
+    pendingBarcode = code;
+    document.getElementById('barcodeInput').value = code;
+    setBarcodeStatus('Produkt ' + code + ' wird gesucht …', false);
+
+    var custom = await fetchCustomProduct(code);
+    if(custom){
+      setBarcodeStatus('Gespeichertes Produkt gefunden.', false);
+      customProductToSelected(custom);
+      return;
+    }
+
+    try{
+      var url = 'https://world.openfoodfacts.org/api/v2/product/' + encodeURIComponent(code) +
+        '.json?fields=code,product_name,product_name_de,brands,nutriments,quantity';
+      var response = await fetch(url, {headers:{'Accept':'application/json'}});
+      if(response.ok){
+        var payload = await response.json();
+        var product = payload && payload.product;
+        var n = product && product.nutriments ? product.nutriments : {};
+        var kcal = nutrimentValue(n,['energy-kcal_100g','energy-kcal']);
+        if(payload.status === 1 && product && (product.product_name_de || product.product_name) && kcal >= 0){
+          selectFood(product);
+          return;
+        }
+      }
+    }catch(err){
+      console.error('Open Food Facts barcode lookup failed', err);
+    }
+
+    showCustomProductForm(code);
+  }
+
+  function showCustomProductForm(code){
+    pendingBarcode = code;
+    document.getElementById('barcodePanel').classList.remove('show');
+    var form = document.getElementById('customFoodForm');
+    form.classList.add('show');
+    document.getElementById('customFoodName').value = '';
+    document.getElementById('customFoodBrand').value = '';
+    document.getElementById('customFoodKcal').value = '';
+    document.getElementById('customFoodProtein').value = '0';
+    document.getElementById('customFoodCarbs').value = '0';
+    document.getElementById('customFoodFat').value = '0';
+    setTimeout(function(){ document.getElementById('customFoodName').focus(); }, 60);
+  }
+
+  async function saveManualBarcodeProduct(){
+    var product = {
+      code: pendingBarcode,
+      name: document.getElementById('customFoodName').value.trim(),
+      brand: document.getElementById('customFoodBrand').value.trim(),
+      kcal100: numberOrZero(document.getElementById('customFoodKcal').value),
+      protein100: numberOrZero(document.getElementById('customFoodProtein').value),
+      carbs100: numberOrZero(document.getElementById('customFoodCarbs').value),
+      fat100: numberOrZero(document.getElementById('customFoodFat').value)
+    };
+    if(!product.code || !product.name){
+      showToast('Barcode und Produktname fehlen');
+      return;
+    }
+    try{
+      await saveCustomProduct(product);
+      showToast('Produkt für nächsten Scan gespeichert');
+      customProductToSelected(product);
+    }catch(err){
+      console.error('Save manual product failed', err);
+      showToast('Produkt konnte nicht gespeichert werden');
+    }
   }
 
   function nutrimentValue(n, keys){
@@ -1194,22 +1579,16 @@
   function selectFood(product){
     var n = product.nutriments || {};
     selectedFood = {
-      code: product.code || '',
+      code: product.code || pendingBarcode || '',
       name: product.product_name_de || product.product_name || 'Produkt',
       brand: product.brands || '',
       kcal100: nutrimentValue(n,['energy-kcal_100g','energy-kcal']),
       protein100: nutrimentValue(n,['proteins_100g','proteins']),
       carbs100: nutrimentValue(n,['carbohydrates_100g','carbohydrates']),
-      fat100: nutrimentValue(n,['fat_100g','fat'])
+      fat100: nutrimentValue(n,['fat_100g','fat']),
+      source: 'openfoodfacts'
     };
-    document.getElementById('selectedFoodName').textContent = selectedFood.name;
-    document.getElementById('selectedFoodBrand').textContent = selectedFood.brand;
-    document.getElementById('foodAmount').value = '100';
-    document.getElementById('foodResults').innerHTML = '';
-    document.getElementById('foodSearchForm').style.display = 'none';
-    document.querySelector('.food-help').style.display = 'none';
-    document.getElementById('foodSelected').classList.add('show');
-    updateSelectedPreview();
+    showSelectedFood();
   }
 
   function updateSelectedPreview(){
@@ -1239,7 +1618,7 @@
       protein: round1(selectedFood.protein100 * f),
       carbs: round1(selectedFood.carbs100 * f),
       fat: round1(selectedFood.fat100 * f),
-      source: 'openfoodfacts',
+      source: selectedFood.source || 'openfoodfacts',
       barcode: selectedFood.code || ''
     });
     saveData(state.profile, data);
@@ -1557,6 +1936,22 @@
   });
 
 
+
+  document.getElementById('barcodeScanBtn').addEventListener('click', startBarcodeScanner);
+  document.getElementById('barcodeManualBtn').addEventListener('click', function(){
+    stopBarcodeScanner();
+    showBarcodePanel(true);
+  });
+  document.getElementById('barcodeManualForm').addEventListener('submit', function(e){
+    e.preventDefault();
+    var code = normalizeBarcode(document.getElementById('barcodeInput').value);
+    if(code) lookupBarcode(code);
+  });
+  document.getElementById('customFoodForm').addEventListener('submit', function(e){
+    e.preventDefault();
+    saveManualBarcodeProduct();
+  });
+
   document.getElementById('foodClose').addEventListener('click', closeFoodSearch);
   document.getElementById('foodModal').addEventListener('click', function(e){
     if(e.target.id === 'foodModal') closeFoodSearch();
@@ -1580,6 +1975,7 @@
     document.getElementById('foodSearchForm').style.display = 'flex';
     document.querySelector('.food-help').style.display = 'block';
     document.getElementById('foodResults').innerHTML = '';
+    resetBarcodeUI();
     setTimeout(function(){ document.getElementById('foodSearchInput').focus(); }, 50);
   });
   document.getElementById('foodAdd').addEventListener('click', addSelectedFood);
