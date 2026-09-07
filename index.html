@@ -830,12 +830,13 @@
       <button type="submit">Suchen</button>
     </form>
     <div class="food-mode-row" id="foodModeRow">
-      <button type="button" class="barcode-btn" id="barcodeScanBtn">📷 Barcode scannen</button>
+      <button type="button" class="barcode-btn" id="barcodeScanBtn">📷 Barcode fotografieren</button>
+      <input id="barcodePhotoInput" type="file" accept="image/*" capture="environment" style="display:none">
       <button type="button" class="barcode-btn secondary" id="barcodeManualBtn">Barcode eingeben</button>
     </div>
     <div class="barcode-panel" id="barcodePanel">
       <div id="barcodeReader"></div>
-      <div class="barcode-status" id="barcodeStatus">Halte den Barcode ruhig vor die Kamera.</div>
+      <div class="barcode-status" id="barcodeStatus">Mach ein scharfes Foto vom Barcode.</div>
       <form class="barcode-manual-form" id="barcodeManualForm">
         <input id="barcodeInput" inputmode="numeric" autocomplete="off" placeholder="EAN / Barcode eingeben">
         <button type="submit">Prüfen</button>
@@ -1325,7 +1326,7 @@
     if(custom) custom.classList.remove('show');
     var inp = document.getElementById('barcodeInput');
     if(inp) inp.value = '';
-    setBarcodeStatus('Halte den Barcode ruhig vor die Kamera.', false);
+    setBarcodeStatus('Mach ein scharfes Foto vom Barcode.', false);
   }
 
   function showBarcodePanel(manualOnly){
@@ -1346,14 +1347,28 @@
     showBarcodePanel(false);
     await stopBarcodeScanner();
 
+    var input = document.getElementById('barcodePhotoInput');
+    if(!input){
+      setBarcodeStatus('Foto-Auswahl ist nicht verfügbar. Du kannst den Barcode unten manuell eingeben.', true);
+      return;
+    }
+
+    input.value = '';
+    setBarcodeStatus('Kamera öffnen und den Barcode möglichst gerade und scharf fotografieren.', false);
+    input.click();
+  }
+
+  async function scanBarcodePhoto(file){
+    if(!file) return;
+
     if(typeof Html5Qrcode === 'undefined'){
-      setBarcodeStatus('Scanner konnte nicht geladen werden. Du kannst den Barcode unten manuell eingeben.', true);
+      setBarcodeStatus('Barcode-Erkennung konnte nicht geladen werden. Du kannst den Barcode unten manuell eingeben.', true);
       return;
     }
 
     try{
       barcodeScanLocked = false;
-      setBarcodeStatus('Kamera und Barcode-Erkennung werden gestartet …', false);
+      setBarcodeStatus('Foto wird ausgewertet …', false);
 
       var formats = [];
       if(typeof Html5QrcodeSupportedFormats !== 'undefined'){
@@ -1366,99 +1381,50 @@
         ];
       }
 
+      var reader = document.getElementById('barcodeReader');
+      if(reader) reader.innerHTML = '';
+
       html5BarcodeScanner = new Html5Qrcode('barcodeReader', {
         formatsToSupport: formats.length ? formats : undefined,
-        verbose: false,
-        zxingWasm: { loadMode: 'cdn' }
+        verbose: false
       });
-      barcodeScanner = 'html5qrcode-wasm';
+      barcodeScanner = 'photo';
 
-      var config = {
-        fps: 12,
-        aspectRatio: 1.777778,
-        disableFlip: true,
-        qrbox: function(viewfinderWidth, viewfinderHeight){
-          var width = Math.floor(Math.min(viewfinderWidth * 0.88, 420));
-          var height = Math.floor(Math.min(viewfinderHeight * 0.34, 150));
-          return { width: width, height: height };
-        }
-      };
+      var decodedText = await html5BarcodeScanner.scanFile(file, true);
+      var code = normalizeBarcode(decodedText);
 
-      await html5BarcodeScanner.start(
-        { facingMode: { exact: 'environment' } },
-        config,
-        async function(decodedText){
-          if(barcodeScanLocked) return;
-          var code = normalizeBarcode(decodedText);
-          if(!/^\d{8,14}$/.test(code)) return;
-          barcodeScanLocked = true;
-          setBarcodeStatus('Barcode erkannt: ' + code, false);
-          try{ await stopBarcodeScanner(); }catch(e){}
-          await lookupBarcode(code);
-        },
-        function(){}
-      );
-
-      setBarcodeStatus('Barcode waagerecht in den Rahmen halten und kurz ruhig bleiben.', false);
-    }catch(err){
-      console.error('Barcode camera failed', err);
-      try{
-        if(html5BarcodeScanner){ try{ await html5BarcodeScanner.clear(); }catch(e){} }
-        html5BarcodeScanner = new Html5Qrcode('barcodeReader', {
-          formatsToSupport: (typeof Html5QrcodeSupportedFormats !== 'undefined') ? [
-            Html5QrcodeSupportedFormats.EAN_13,
-            Html5QrcodeSupportedFormats.EAN_8,
-            Html5QrcodeSupportedFormats.UPC_A,
-            Html5QrcodeSupportedFormats.UPC_E,
-            Html5QrcodeSupportedFormats.CODE_128
-          ] : undefined,
-          verbose: false,
-          zxingWasm: { loadMode: 'cdn' }
-        });
-        barcodeScanner = 'html5qrcode-wasm';
-        await html5BarcodeScanner.start(
-          { facingMode: 'environment' },
-          {
-            fps: 12,
-            disableFlip: true,
-            qrbox: function(w,h){
-              return { width: Math.floor(Math.min(w * 0.88, 420)), height: Math.floor(Math.min(h * 0.34, 150)) };
-            }
-          },
-          async function(decodedText){
-            if(barcodeScanLocked) return;
-            var code = normalizeBarcode(decodedText);
-            if(!/^\d{8,14}$/.test(code)) return;
-            barcodeScanLocked = true;
-            setBarcodeStatus('Barcode erkannt: ' + code, false);
-            try{ await stopBarcodeScanner(); }catch(e){}
-            await lookupBarcode(code);
-          },
-          function(){}
-        );
-        setBarcodeStatus('Barcode waagerecht in den Rahmen halten und kurz ruhig bleiben.', false);
-      }catch(fallbackErr){
-        console.error('Barcode camera fallback failed', fallbackErr);
-        barcodeScanner = null;
-        html5BarcodeScanner = null;
-        setBarcodeStatus('Scanner konnte nicht gestartet werden. Du kannst den Barcode unten manuell eingeben.', true);
+      if(!/^\d{8,14}$/.test(code)){
+        throw new Error('Kein gültiger EAN/UPC-Code erkannt');
       }
+
+      barcodeScanLocked = true;
+      setBarcodeStatus('Barcode erkannt: ' + code, false);
+      try{ await html5BarcodeScanner.clear(); }catch(e){}
+      html5BarcodeScanner = null;
+      barcodeScanner = null;
+
+      await lookupBarcode(code);
+    }catch(err){
+      console.error('Barcode photo decode failed', err);
+      try{
+        if(html5BarcodeScanner){ await html5BarcodeScanner.clear(); }
+      }catch(e){}
+      html5BarcodeScanner = null;
+      barcodeScanner = null;
+      setBarcodeStatus('Barcode im Foto nicht erkannt. Bitte näher, gerade und scharf fotografieren oder den Code unten eingeben.', true);
     }
   }
 
   async function stopBarcodeScanner(){
     barcodeScanLocked = false;
-    if(barcodeScanner === 'html5qrcode-wasm' && html5BarcodeScanner){
+    if(html5BarcodeScanner){
       try{ if(html5BarcodeScanner.isScanning){ await html5BarcodeScanner.stop(); } }catch(e){}
       try{ await html5BarcodeScanner.clear(); }catch(e){}
-      html5BarcodeScanner = null;
-      barcodeScanner = null;
-      var reader = document.getElementById('barcodeReader');
-      if(reader) reader.innerHTML = '';
-      return;
     }
-    barcodeScanner = null;
     html5BarcodeScanner = null;
+    barcodeScanner = null;
+    var reader = document.getElementById('barcodeReader');
+    if(reader) reader.innerHTML = '';
   }
 
   async function fetchCustomProduct(barcode){
@@ -2014,6 +1980,10 @@
 
 
   document.getElementById('barcodeScanBtn').addEventListener('click', startBarcodeScanner);
+  document.getElementById('barcodePhotoInput').addEventListener('change', function(e){
+    var file = e.target.files && e.target.files[0];
+    if(file) scanBarcodePhoto(file);
+  });
   document.getElementById('barcodeManualBtn').addEventListener('click', function(){
     stopBarcodeScanner();
     showBarcodePanel(true);
