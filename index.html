@@ -441,6 +441,160 @@
   .password-card button{width:100%;margin-top:10px;border:none;border-radius:13px;padding:13px 14px;background:linear-gradient(135deg,#fff,#e8eef7);color:#0f1520;font-size:14px;font-weight:700;cursor:pointer;}
   .password-error{min-height:18px;margin-top:9px;color:#ff9b93;font-size:12.5px;text-align:center;}
 
+
+
+  /* ---------- Ernährung: automatische Nährwerte ---------- */
+  .nutrition-summary{
+    display:grid;
+    grid-template-columns:1.35fr repeat(3,1fr);
+    gap:7px;
+    margin:0 0 14px;
+  }
+  .nutrition-stat{
+    padding:10px 9px;
+    border-radius:13px;
+    background:rgba(255,255,255,.035);
+    border:1px solid var(--line);
+    text-align:center;
+  }
+  .nutrition-stat strong{
+    display:block;
+    font-size:13px;
+    color:var(--ink);
+  }
+  .nutrition-stat span{
+    display:block;
+    margin-top:2px;
+    font-size:9.5px;
+    color:var(--ink-soft);
+    text-transform:uppercase;
+    letter-spacing:.06em;
+  }
+  .nutrition-stat.kcal strong{color:#ffc466;}
+
+  .meal-headline{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    margin-bottom:7px;
+  }
+  .meal-headline .meal-group-title{margin-bottom:0;}
+  .meal-kcal{font-size:11px;color:var(--ink-soft);font-weight:700;}
+
+  .macro-line{
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+    margin-top:4px;
+    color:var(--ink-soft);
+    font-size:11px;
+  }
+  .macro-line .kcal{color:#ffc466;font-weight:700;}
+
+  .food-search-btn{
+    width:100%;
+    border:1px solid rgba(98,224,184,.20);
+    background:rgba(98,224,184,.07);
+    color:#91ebc9;
+    border-radius:12px;
+    padding:10px 12px;
+    font-size:12.5px;
+    font-weight:700;
+    cursor:pointer;
+    margin-top:10px;
+  }
+  .manual-label{
+    margin-top:11px;
+    font-size:10px;
+    color:#687587;
+    text-transform:uppercase;
+    letter-spacing:.08em;
+  }
+
+  .food-modal{
+    position:fixed;
+    inset:0;
+    z-index:9000;
+    display:none;
+    align-items:flex-end;
+    justify-content:center;
+    background:rgba(0,0,0,.62);
+    backdrop-filter:blur(8px);
+  }
+  .food-modal.open{display:flex;}
+  .food-sheet{
+    width:min(100%,560px);
+    max-height:88vh;
+    overflow:auto;
+    border-radius:24px 24px 0 0;
+    background:#111824;
+    border:1px solid rgba(255,255,255,.09);
+    border-bottom:none;
+    box-shadow:0 -24px 70px rgba(0,0,0,.45);
+    padding:18px 16px calc(18px + env(safe-area-inset-bottom));
+  }
+  .food-sheet-head{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    margin-bottom:14px;
+  }
+  .food-sheet-head h3{font-size:19px;}
+  .food-close{
+    width:34px;height:34px;border-radius:999px;
+    border:1px solid var(--line);background:rgba(255,255,255,.05);
+    color:var(--ink);font-size:20px;line-height:1;cursor:pointer;
+  }
+  .food-search-form{display:flex;gap:8px;margin-bottom:12px;}
+  .food-search-form input{
+    min-width:0;flex:1;border:1px solid var(--line);background:#0c121b;color:var(--ink);
+    border-radius:12px;padding:12px 13px;font-size:15px;outline:none;
+  }
+  .food-search-form input:focus{border-color:rgba(98,224,184,.45);box-shadow:0 0 0 3px rgba(98,224,184,.08);}
+  .food-search-form button{
+    border:none;border-radius:12px;padding:0 14px;background:#eef3f9;color:#111821;
+    font-weight:800;font-size:13px;cursor:pointer;
+  }
+  .food-help{font-size:11.5px;color:var(--ink-soft);line-height:1.45;margin:0 2px 12px;}
+  .food-results{display:flex;flex-direction:column;gap:8px;}
+  .food-result{
+    width:100%;text-align:left;border:1px solid var(--line);background:rgba(255,255,255,.035);
+    color:var(--ink);border-radius:14px;padding:12px;cursor:pointer;
+  }
+  .food-result-name{font-size:13.5px;font-weight:700;line-height:1.3;}
+  .food-result-brand{font-size:11px;color:var(--ink-soft);margin-top:2px;}
+  .food-result-macros{font-size:11px;color:#a8b3c2;margin-top:7px;}
+  .food-result-macros strong{color:#ffc466;}
+  .food-empty{padding:20px 8px;text-align:center;color:var(--ink-soft);font-size:13px;}
+
+  .food-selected{
+    display:none;
+    padding:14px;
+    border:1px solid var(--line);
+    border-radius:16px;
+    background:rgba(255,255,255,.035);
+  }
+  .food-selected.show{display:block;}
+  .food-selected h4{margin:0 0 3px;font-size:15px;}
+  .food-selected .brand{font-size:11.5px;color:var(--ink-soft);margin-bottom:12px;}
+  .amount-row{display:flex;align-items:flex-end;gap:8px;}
+  .amount-row label{flex:1;font-size:11px;color:var(--ink-soft);display:flex;flex-direction:column;gap:5px;}
+  .amount-row input{
+    width:100%;border:1px solid var(--line);background:#0c121b;color:var(--ink);
+    border-radius:11px;padding:10px;font-size:15px;outline:none;
+  }
+  .selected-preview{
+    margin:12px 0;padding:11px;border-radius:12px;background:rgba(255,179,71,.07);
+    border:1px solid rgba(255,179,71,.14);font-size:12px;color:#c4ccd7;
+  }
+  .selected-preview strong{color:#ffc466;font-size:15px;}
+  .food-actions{display:flex;gap:8px;}
+  .food-actions button{flex:1;border-radius:12px;padding:11px;border:1px solid var(--line);font-weight:700;cursor:pointer;}
+  .food-back{background:rgba(255,255,255,.04);color:var(--ink);}
+  .food-add{background:linear-gradient(135deg,#62e0b8,#7de8c5);color:#0d1713;border-color:transparent!important;}
+
 </style>
 </head>
 <body class="app-locked">
@@ -537,6 +691,36 @@
 
 <div class="toast" id="toast"></div>
 
+<div class="food-modal" id="foodModal" aria-hidden="true">
+  <div class="food-sheet" role="dialog" aria-modal="true" aria-labelledby="foodModalTitle">
+    <div class="food-sheet-head">
+      <h3 id="foodModalTitle">Lebensmittel suchen</h3>
+      <button type="button" class="food-close" id="foodClose" aria-label="Schließen">×</button>
+    </div>
+    <form class="food-search-form" id="foodSearchForm">
+      <input id="foodSearchInput" type="search" placeholder="z. B. Skyr, Reis, Proteinriegel" autocomplete="off" required>
+      <button type="submit">Suchen</button>
+    </form>
+    <p class="food-help">Wähle ein Produkt aus, gib die gegessene Menge in Gramm ein und die App berechnet Kalorien und Makros automatisch.</p>
+    <div class="food-results" id="foodResults"></div>
+    <div class="food-selected" id="foodSelected">
+      <h4 id="selectedFoodName"></h4>
+      <div class="brand" id="selectedFoodBrand"></div>
+      <div class="amount-row">
+        <label>Menge in Gramm
+          <input id="foodAmount" type="number" inputmode="decimal" min="1" step="1" value="100">
+        </label>
+      </div>
+      <div class="selected-preview" id="selectedPreview"></div>
+      <div class="food-actions">
+        <button type="button" class="food-back" id="foodBack">Zurück</button>
+        <button type="button" class="food-add" id="foodAdd">Hinzufügen</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
 
 <script>
 (function(){
@@ -574,6 +758,8 @@
   var syncPollTimer = null;
   var pendingSave = {};
   var lastRemoteSnapshot = {};
+  var foodSearchContext = null;
+  var selectedFood = null;
 
   var PROFILES = ["Julien", "Soraia"];
   var MEALS = [
@@ -648,6 +834,12 @@
         if(!parsed.nutrition.days[d.key]){
           parsed.nutrition.days[d.key] = { meals: { fruehstueck: [], mittag: [], abend: [], snacks: [] } };
         }
+        if(!parsed.nutrition.days[d.key].meals){
+          parsed.nutrition.days[d.key].meals = { fruehstueck: [], mittag: [], abend: [], snacks: [] };
+        }
+        MEALS.forEach(function(m){
+          if(!Array.isArray(parsed.nutrition.days[d.key].meals[m.key])) parsed.nutrition.days[d.key].meals[m.key] = [];
+        });
       });
 
       // Migration: ältere Version speicherte Trainingspläne als Liste statt als Wochentage
@@ -881,6 +1073,181 @@
     }, 1900);
   }
 
+
+  /* ---------- Ernährung / Open Food Facts ---------- */
+
+  function numberOrZero(v){
+    var n = Number(v);
+    return Number.isFinite(n) ? n : 0;
+  }
+
+  function round1(v){
+    return Math.round(numberOrZero(v) * 10) / 10;
+  }
+
+  function itemMacros(it){
+    return {
+      kcal: numberOrZero(it && it.kcal),
+      protein: numberOrZero(it && it.protein),
+      carbs: numberOrZero(it && it.carbs),
+      fat: numberOrZero(it && it.fat)
+    };
+  }
+
+  function macroTotals(items){
+    return (items || []).reduce(function(sum, it){
+      var m = itemMacros(it);
+      sum.kcal += m.kcal;
+      sum.protein += m.protein;
+      sum.carbs += m.carbs;
+      sum.fat += m.fat;
+      return sum;
+    }, {kcal:0, protein:0, carbs:0, fat:0});
+  }
+
+  function formatMacro(v){
+    var n = round1(v);
+    return Number.isInteger(n) ? String(n) : n.toFixed(1).replace('.', ',');
+  }
+
+  function dayMacroTotals(day){
+    var all = [];
+    MEALS.forEach(function(m){
+      all = all.concat((day.meals && day.meals[m.key]) || []);
+    });
+    return macroTotals(all);
+  }
+
+  function openFoodSearch(dayKey, mealKey){
+    foodSearchContext = {day:dayKey, meal:mealKey};
+    selectedFood = null;
+    document.getElementById('foodResults').innerHTML = '';
+    document.getElementById('foodSelected').classList.remove('show');
+    document.getElementById('foodSearchForm').style.display = 'flex';
+    document.querySelector('.food-help').style.display = 'block';
+    var modal = document.getElementById('foodModal');
+    modal.classList.add('open');
+    modal.setAttribute('aria-hidden','false');
+    var input = document.getElementById('foodSearchInput');
+    input.value = '';
+    setTimeout(function(){ input.focus(); }, 80);
+  }
+
+  function closeFoodSearch(){
+    var modal = document.getElementById('foodModal');
+    modal.classList.remove('open');
+    modal.setAttribute('aria-hidden','true');
+    foodSearchContext = null;
+    selectedFood = null;
+  }
+
+  function nutrimentValue(n, keys){
+    for(var i=0;i<keys.length;i++){
+      var v = n && n[keys[i]];
+      if(v !== undefined && v !== null && v !== '' && Number.isFinite(Number(v))) return Number(v);
+    }
+    return 0;
+  }
+
+  async function searchFoods(query){
+    var results = document.getElementById('foodResults');
+    results.innerHTML = '<div class="food-empty">Suche läuft …</div>';
+    var url = 'https://world.openfoodfacts.org/cgi/search.pl?' +
+      'search_terms=' + encodeURIComponent(query) +
+      '&search_simple=1&action=process&json=1&page_size=12' +
+      '&fields=code,product_name,product_name_de,brands,nutriments,quantity';
+    try{
+      var response = await fetch(url, {headers:{'Accept':'application/json'}});
+      if(!response.ok) throw new Error('HTTP ' + response.status);
+      var payload = await response.json();
+      var products = (payload.products || []).filter(function(p){
+        var n = p.nutriments || {};
+        var kcal = nutrimentValue(n,['energy-kcal_100g','energy-kcal']);
+        return (p.product_name_de || p.product_name) && kcal > 0;
+      }).slice(0,10);
+
+      if(!products.length){
+        results.innerHTML = '<div class="food-empty">Keine passenden Produkte mit Nährwerten gefunden. Du kannst den Eintrag darunter weiterhin manuell anlegen.</div>';
+        return;
+      }
+
+      results.innerHTML = products.map(function(p, idx){
+        var n = p.nutriments || {};
+        var kcal = nutrimentValue(n,['energy-kcal_100g','energy-kcal']);
+        var protein = nutrimentValue(n,['proteins_100g','proteins']);
+        var carbs = nutrimentValue(n,['carbohydrates_100g','carbohydrates']);
+        var fat = nutrimentValue(n,['fat_100g','fat']);
+        var name = p.product_name_de || p.product_name || 'Produkt';
+        var brand = p.brands || p.quantity || '';
+        return '<button type="button" class="food-result" data-food-index="' + idx + '">' +
+          '<div class="food-result-name">' + escapeHtml(name) + '</div>' +
+          (brand ? '<div class="food-result-brand">' + escapeHtml(brand) + '</div>' : '') +
+          '<div class="food-result-macros"><strong>' + formatMacro(kcal) + ' kcal</strong> / 100 g · E ' + formatMacro(protein) + ' g · KH ' + formatMacro(carbs) + ' g · F ' + formatMacro(fat) + ' g</div>' +
+        '</button>';
+      }).join('');
+      results._products = products;
+    }catch(err){
+      results.innerHTML = '<div class="food-empty">Lebensmittelsuche gerade nicht erreichbar. Bitte später erneut versuchen oder den Eintrag manuell anlegen.</div>';
+    }
+  }
+
+  function selectFood(product){
+    var n = product.nutriments || {};
+    selectedFood = {
+      code: product.code || '',
+      name: product.product_name_de || product.product_name || 'Produkt',
+      brand: product.brands || '',
+      kcal100: nutrimentValue(n,['energy-kcal_100g','energy-kcal']),
+      protein100: nutrimentValue(n,['proteins_100g','proteins']),
+      carbs100: nutrimentValue(n,['carbohydrates_100g','carbohydrates']),
+      fat100: nutrimentValue(n,['fat_100g','fat'])
+    };
+    document.getElementById('selectedFoodName').textContent = selectedFood.name;
+    document.getElementById('selectedFoodBrand').textContent = selectedFood.brand;
+    document.getElementById('foodAmount').value = '100';
+    document.getElementById('foodResults').innerHTML = '';
+    document.getElementById('foodSearchForm').style.display = 'none';
+    document.querySelector('.food-help').style.display = 'none';
+    document.getElementById('foodSelected').classList.add('show');
+    updateSelectedPreview();
+  }
+
+  function updateSelectedPreview(){
+    if(!selectedFood) return;
+    var grams = Math.max(1, numberOrZero(document.getElementById('foodAmount').value) || 100);
+    var f = grams / 100;
+    document.getElementById('selectedPreview').innerHTML =
+      '<strong>' + formatMacro(selectedFood.kcal100 * f) + ' kcal</strong> · ' +
+      'Eiweiß ' + formatMacro(selectedFood.protein100 * f) + ' g · ' +
+      'KH ' + formatMacro(selectedFood.carbs100 * f) + ' g · ' +
+      'Fett ' + formatMacro(selectedFood.fat100 * f) + ' g';
+  }
+
+  function addSelectedFood(){
+    if(!selectedFood || !foodSearchContext) return;
+    var grams = Math.max(1, numberOrZero(document.getElementById('foodAmount').value) || 100);
+    var f = grams / 100;
+    var data = currentData();
+    var day = data.nutrition.days[foodSearchContext.day];
+    if(!day) return;
+    day.meals[foodSearchContext.meal].push({
+      id: uid(),
+      name: selectedFood.name + (selectedFood.brand ? ' · ' + selectedFood.brand : ''),
+      meta: formatMacro(grams) + ' g',
+      grams: round1(grams),
+      kcal: round1(selectedFood.kcal100 * f),
+      protein: round1(selectedFood.protein100 * f),
+      carbs: round1(selectedFood.carbs100 * f),
+      fat: round1(selectedFood.fat100 * f),
+      source: 'openfoodfacts',
+      barcode: selectedFood.code || ''
+    });
+    saveData(state.profile, data);
+    closeFoodSearch();
+    render();
+    showToast('Lebensmittel hinzugefügt');
+  }
+
   /* ---------- Rendering ---------- */
 
   function render(){
@@ -915,24 +1282,41 @@
       var day = data.nutrition.days[d.key];
       var open = !!state.openCards["n-" + d.key];
       var totalItems = MEALS.reduce(function(n, m){ return n + day.meals[m.key].length; }, 0);
+      var dayTotals = dayMacroTotals(day);
+      var hasCalculated = dayTotals.kcal > 0 || dayTotals.protein > 0 || dayTotals.carbs > 0 || dayTotals.fat > 0;
+
+      var summaryHtml = '<div class="nutrition-summary">' +
+        '<div class="nutrition-stat kcal"><strong>' + formatMacro(dayTotals.kcal) + '</strong><span>kcal</span></div>' +
+        '<div class="nutrition-stat"><strong>' + formatMacro(dayTotals.protein) + ' g</strong><span>Eiweiß</span></div>' +
+        '<div class="nutrition-stat"><strong>' + formatMacro(dayTotals.carbs) + ' g</strong><span>KH</span></div>' +
+        '<div class="nutrition-stat"><strong>' + formatMacro(dayTotals.fat) + ' g</strong><span>Fett</span></div>' +
+      '</div>';
 
       var mealsHtml = MEALS.map(function(m){
         var items = day.meals[m.key] || [];
+        var mealTotals = macroTotals(items);
         var itemsHtml = items.map(function(it){
+          var macros = itemMacros(it);
+          var macroHtml = (macros.kcal || macros.protein || macros.carbs || macros.fat)
+            ? '<div class="macro-line"><span class="kcal">' + formatMacro(macros.kcal) + ' kcal</span><span>E ' + formatMacro(macros.protein) + ' g</span><span>KH ' + formatMacro(macros.carbs) + ' g</span><span>F ' + formatMacro(macros.fat) + ' g</span></div>'
+            : '';
           return '<div class="item-row">' +
             '<div><div class="item-name">' + escapeHtml(it.name) + '</div>' +
             (it.meta ? '<div class="item-meta">' + escapeHtml(it.meta) + '</div>' : '') +
+            macroHtml +
             '</div>' +
             '<button class="item-remove" data-action="removeItem" data-day="' + d.key + '" data-meal="' + m.key + '" data-item="' + it.id + '">&times;</button>' +
             '</div>';
         }).join("");
 
         return '<div class="meal-group">' +
-          '<div class="meal-group-title">' + m.label + '</div>' +
+          '<div class="meal-headline"><div class="meal-group-title">' + m.label + '</div><div class="meal-kcal">' + (mealTotals.kcal ? formatMacro(mealTotals.kcal) + ' kcal' : '') + '</div></div>' +
           itemsHtml +
+          '<button type="button" class="food-search-btn" data-action="openFoodSearch" data-day="' + d.key + '" data-meal="' + m.key + '">+ Lebensmittel suchen &amp; berechnen</button>' +
+          '<div class="manual-label">Oder manuell eintragen</div>' +
           '<form class="mini-form" data-action="addItem" data-day="' + d.key + '" data-meal="' + m.key + '">' +
-            '<input class="f-name" name="name" placeholder="z. B. Haferflocken mit Banane" required>' +
-            '<input class="f-small" name="meta" placeholder="kcal / Menge">' +
+            '<input class="f-name" name="name" placeholder="z. B. selbstgekochtes Gericht" required>' +
+            '<input class="f-small" name="meta" placeholder="Menge / Notiz">' +
             '<button type="submit">+</button>' +
           '</form>' +
         '</div>';
@@ -941,11 +1325,14 @@
       return '<div class="plan-card' + (open ? ' open' : '') + '" data-plan-id="' + d.key + '">' +
         '<div class="plan-card-head" data-action="toggle" data-plan="' + d.key + '" data-kind="n">' +
           '<div><h3>' + d.label + '</h3>' +
-            (totalItems ? '<span class="chip nutrition">' + totalItems + ' Eintrag' + (totalItems === 1 ? "" : "e") + '</span>' : '<span class="chip neutral">Noch leer</span>') +
+            (totalItems
+              ? '<span class="chip nutrition">' + (hasCalculated ? formatMacro(dayTotals.kcal) + ' kcal · ' : '') + totalItems + ' Eintrag' + (totalItems === 1 ? "" : "e") + '</span>'
+              : '<span class="chip neutral">Noch leer</span>') +
           '</div>' +
           '<span class="chevron"></span>' +
         '</div>' +
         '<div class="plan-card-body">' +
+          summaryHtml +
           mealsHtml +
         '</div>' +
       '</div>';
@@ -1112,6 +1499,12 @@
       return;
     }
 
+    var foodBtn = e.target.closest('[data-action="openFoodSearch"]');
+    if(foodBtn){
+      openFoodSearch(foodBtn.dataset.day, foodBtn.dataset.meal);
+      return;
+    }
+
     var removeItem = e.target.closest('[data-action="removeItem"]');
     if(removeItem){
       removeMealItem(removeItem.dataset.day, removeItem.dataset.meal, removeItem.dataset.item);
@@ -1162,6 +1555,34 @@
       form.reset();
     }
   });
+
+
+  document.getElementById('foodClose').addEventListener('click', closeFoodSearch);
+  document.getElementById('foodModal').addEventListener('click', function(e){
+    if(e.target.id === 'foodModal') closeFoodSearch();
+  });
+  document.getElementById('foodSearchForm').addEventListener('submit', function(e){
+    e.preventDefault();
+    var q = document.getElementById('foodSearchInput').value.trim();
+    if(q) searchFoods(q);
+  });
+  document.getElementById('foodResults').addEventListener('click', function(e){
+    var btn = e.target.closest('[data-food-index]');
+    if(!btn) return;
+    var products = document.getElementById('foodResults')._products || [];
+    var product = products[Number(btn.dataset.foodIndex)];
+    if(product) selectFood(product);
+  });
+  document.getElementById('foodAmount').addEventListener('input', updateSelectedPreview);
+  document.getElementById('foodBack').addEventListener('click', function(){
+    selectedFood = null;
+    document.getElementById('foodSelected').classList.remove('show');
+    document.getElementById('foodSearchForm').style.display = 'flex';
+    document.querySelector('.food-help').style.display = 'block';
+    document.getElementById('foodResults').innerHTML = '';
+    setTimeout(function(){ document.getElementById('foodSearchInput').focus(); }, 50);
+  });
+  document.getElementById('foodAdd').addEventListener('click', addSelectedFood);
 
   /* ---------- Export / Import / Reset ---------- */
 
