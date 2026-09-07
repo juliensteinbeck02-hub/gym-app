@@ -1196,6 +1196,55 @@
     font-size:11px;
   }
 
+
+  .food-result{
+    position:relative;
+    padding-right:46px !important;
+  }
+  .food-result-star{
+    position:absolute;
+    right:9px;
+    top:50%;
+    transform:translateY(-50%);
+    width:32px;
+    height:32px;
+    border-radius:50%;
+    border:1px solid rgba(245,195,107,.24);
+    background:rgba(245,195,107,.06);
+    color:#f5c36b;
+    font-size:18px;
+    line-height:1;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    z-index:2;
+  }
+  .food-result-star.active{
+    background:rgba(245,195,107,.16);
+    border-color:rgba(245,195,107,.45);
+  }
+  .favorite-chip-wrap{
+    position:relative;
+    flex:0 0 auto;
+  }
+  .favorite-chip-wrap .quick-food-chip{
+    padding-right:36px;
+  }
+  .favorite-chip-remove{
+    position:absolute;
+    top:50%;
+    right:6px;
+    transform:translateY(-50%);
+    width:26px;
+    height:26px;
+    border-radius:50%;
+    border:0;
+    background:transparent;
+    color:#f5c36b;
+    font-size:17px;
+    z-index:2;
+  }
+
 </style>
 </head>
 <body class="app-locked">
@@ -1413,7 +1462,7 @@
     </form>
 
     <div class="quick-food-section" id="favoriteFoodsSection" hidden>
-      <div class="quick-food-title"><span>⭐ Favoriten</span><span id="favoriteCount"></span></div>
+      <div class="quick-food-title"><span>Favoriten</span><span id="favoriteCount"></span></div>
       <div class="quick-food-list" id="favoriteFoodsList"></div>
     </div>
 
@@ -1461,7 +1510,6 @@
         </label>
       </div>
       <div class="selected-preview" id="selectedPreview"></div>
-      <button type="button" class="favorite-btn" id="foodFavoriteBtn">☆ Als Favorit speichern</button>
       <div class="food-actions">
         <button type="button" class="food-back" id="foodBack">Zurück</button>
         <button type="button" class="food-add" id="foodAdd">Hinzufügen</button>
@@ -1934,48 +1982,48 @@
     ].join("|");
   }
 
-  function isSelectedFoodFavorite(){
-    if(!selectedFood) return false;
+  function productAsFavorite(product){
+    var n = product.nutriments || {};
+    return {
+      id:uid(),
+      name:product.product_name_de || product.product_name || product.name || "Produkt",
+      brand:product.__custom ? "" : (product.brands || product.brand || ""),
+      kcal100:numberOrZero(product.kcal100 !== undefined ? product.kcal100 : nutrimentValue(n,["energy-kcal_100g","energy-kcal"])),
+      protein100:numberOrZero(product.protein100 !== undefined ? product.protein100 : nutrimentValue(n,["proteins_100g","proteins"])),
+      carbs100:numberOrZero(product.carbs100 !== undefined ? product.carbs100 : nutrimentValue(n,["carbohydrates_100g","carbohydrates"])),
+      fat100:numberOrZero(product.fat100 !== undefined ? product.fat100 : nutrimentValue(n,["fat_100g","fat"])),
+      source:product.__custom ? "custom" : (product.source || "openfoodfacts")
+    };
+  }
+
+  function isFoodFavorite(food){
     var data = currentData();
-    var key = foodFavoriteKey(selectedFood);
+    var fav = food.name ? food : productAsFavorite(food);
+    var key = foodFavoriteKey(fav);
     return (data.foodFavorites || []).some(function(f){ return foodFavoriteKey(f) === key; });
   }
 
-  function updateFavoriteButton(){
-    var btn = document.getElementById("foodFavoriteBtn");
-    if(!btn) return;
-    var active = isSelectedFoodFavorite();
-    btn.classList.toggle("active", active);
-    btn.textContent = active ? "★ Favorit gespeichert" : "☆ Als Favorit speichern";
-  }
-
-  function toggleSelectedFoodFavorite(){
-    if(!selectedFood) return;
+  function toggleFoodFavorite(food){
     var data = currentData();
     if(!Array.isArray(data.foodFavorites)) data.foodFavorites = [];
-    var key = foodFavoriteKey(selectedFood);
+
+    var fav = food.name ? food : productAsFavorite(food);
+    var key = foodFavoriteKey(fav);
     var index = data.foodFavorites.findIndex(function(f){ return foodFavoriteKey(f) === key; });
 
     if(index >= 0){
       data.foodFavorites.splice(index, 1);
       showToast("Favorit entfernt");
     }else{
-      data.foodFavorites.unshift({
-        id:uid(),
-        name:selectedFood.name,
-        brand:selectedFood.brand || "",
-        kcal100:round1(selectedFood.kcal100 || 0),
-        protein100:round1(selectedFood.protein100 || 0),
-        carbs100:round1(selectedFood.carbs100 || 0),
-        fat100:round1(selectedFood.fat100 || 0),
-        source:selectedFood.source || "favorite"
-      });
+      fav.id = uid();
+      data.foodFavorites.unshift(fav);
       showToast("Als Favorit gespeichert");
     }
+
     saveData(state.profile, data);
-    updateFavoriteButton();
     renderFoodQuickSections();
   }
+
 
   function renderFoodQuickSections(){
     var data = currentData();
@@ -1989,10 +2037,13 @@
       favSection.hidden = favorites.length === 0;
       favCount.textContent = favorites.length ? String(favorites.length) : "";
       favList.innerHTML = favorites.map(function(f, i){
-        return '<button type="button" class="quick-food-chip" data-favorite-index="' + i + '">' +
-          '<strong>' + escapeHtml(f.name) + '</strong>' +
-          '<span>' + formatMacro(f.kcal100) + ' kcal / 100 g</span>' +
-        '</button>';
+        return '<div class="favorite-chip-wrap">' +
+          '<button type="button" class="quick-food-chip" data-favorite-index="' + i + '">' +
+            '<strong>' + escapeHtml(f.name) + '</strong>' +
+            '<span>' + formatMacro(f.kcal100) + ' kcal / 100 g</span>' +
+          '</button>' +
+          '<button type="button" class="favorite-chip-remove" data-remove-favorite-index="' + i + '" aria-label="Favorit entfernen">★</button>' +
+        '</div>';
       }).join("");
     }
 
@@ -2332,12 +2383,16 @@
       var fat = nutrimentValue(n,['fat_100g','fat']);
       var name = p.product_name_de || p.product_name || 'Produkt';
       var brand = p.__custom ? 'Eigener Eintrag' : (p.brands || p.quantity || '');
-      return '<button type="button" class="food-result" data-food-index="' + idx + '">' +
+      var activeFav = isFoodFavorite(p);
+      return '<div class="food-result" data-food-index="' + idx + '">' +
         '<div class="food-result-name">' + escapeHtml(name) + '</div>' +
         (brand ? '<div class="food-result-brand">' + escapeHtml(brand) + '</div>' : '') +
         '<div class="food-result-macros"><strong>' + formatMacro(kcal) + ' kcal</strong> / 100 g · E ' +
         formatMacro(protein) + ' g · KH ' + formatMacro(carbs) + ' g · F ' + formatMacro(fat) + ' g</div>' +
-      '</button>';
+        '<button type="button" class="food-result-star' + (activeFav ? ' active' : '') + '" data-favorite-food-index="' + idx + '" aria-label="Favorit">' +
+          (activeFav ? '★' : '☆') +
+        '</button>' +
+      '</div>';
     }).join('');
     results._products = products;
   }
@@ -2368,7 +2423,6 @@
     document.getElementById('customFoodForm').classList.remove('show');
     document.getElementById('foodSelected').classList.add('show');
     updateSelectedPreview();
-    updateFavoriteButton();
   }
 
   function updateSelectedPreview(){
@@ -3339,13 +3393,35 @@
     if(q) searchFoods(q);
   });
   document.getElementById('foodResults').addEventListener('click', function(e){
-    var btn = e.target.closest('[data-food-index]');
-    if(!btn) return;
     var products = document.getElementById('foodResults')._products || [];
-    var product = products[Number(btn.dataset.foodIndex)];
+
+    var star = e.target.closest('[data-favorite-food-index]');
+    if(star){
+      e.stopPropagation();
+      var favProduct = products[Number(star.dataset.favoriteFoodIndex)];
+      if(favProduct){
+        toggleFoodFavorite(favProduct);
+        star.classList.toggle('active', isFoodFavorite(favProduct));
+        star.textContent = isFoodFavorite(favProduct) ? '★' : '☆';
+      }
+      return;
+    }
+
+    var row = e.target.closest('[data-food-index]');
+    if(!row) return;
+    var product = products[Number(row.dataset.foodIndex)];
     if(product) selectFood(product);
   });
   document.getElementById('favoriteFoodsList').addEventListener('click', function(e){
+    var remove = e.target.closest('[data-remove-favorite-index]');
+    if(remove){
+      e.stopPropagation();
+      var data = currentData();
+      var fav = (data.foodFavorites || [])[Number(remove.dataset.removeFavoriteIndex)];
+      if(fav) toggleFoodFavorite(fav);
+      return;
+    }
+
     var btn = e.target.closest('[data-favorite-index]');
     if(btn) selectFavoriteFood(btn.dataset.favoriteIndex);
   });
@@ -3353,7 +3429,6 @@
     var btn = e.target.closest('[data-saved-meal-index]');
     if(btn) addSavedMeal(btn.dataset.savedMealIndex);
   });
-  document.getElementById('foodFavoriteBtn').addEventListener('click', toggleSelectedFoodFavorite);
   document.getElementById('foodAmount').addEventListener('input', updateSelectedPreview);
   document.getElementById('foodBack').addEventListener('click', function(){
     selectedFood = null;
