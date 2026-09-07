@@ -1117,6 +1117,19 @@
     .set-row{grid-template-columns:44px 1fr 1fr 36px;gap:5px;}
   }
 
+
+  .exercise-progress{
+    margin-top:5px;
+    font-size:10.5px;
+    line-height:1.4;
+    font-weight:700;
+    color:#91ebc9;
+  }
+  .exercise-progress.neutral{
+    color:var(--ink-soft);
+    font-weight:600;
+  }
+
 </style>
 </head>
 <body class="app-locked">
@@ -2513,6 +2526,77 @@
     return parts.length ? parts.join(" · ") : "Noch keine Trainingshistorie.";
   }
 
+  function bestCurrentSet(ex){
+    var sets = exerciseSetDetails(ex);
+    var best = null;
+    sets.forEach(function(set){
+      var weight = goalNumber(set.weight);
+      var reps = Math.max(0, parseInt(set.reps, 10) || 0);
+      if(weight <= 0 && reps <= 0) return;
+      if(!best || weight > best.weight || (weight === best.weight && reps > best.reps)){
+        best = {weight:weight, reps:reps};
+      }
+    });
+    return best;
+  }
+
+  function lastBestSet(name){
+    var sessions = trainingSessionsForExercise(name);
+    if(!sessions.length) return null;
+    var sets = sessions[0].exercise.setDetails || [];
+    var best = null;
+    sets.forEach(function(set){
+      var weight = goalNumber(set.weight);
+      var reps = Math.max(0, parseInt(set.reps, 10) || 0);
+      if(weight <= 0 && reps <= 0) return;
+      if(!best || weight > best.weight || (weight === best.weight && reps > best.reps)){
+        best = {weight:weight, reps:reps};
+      }
+    });
+    return best;
+  }
+
+  function exerciseProgressText(ex){
+    var current = bestCurrentSet(ex);
+    var last = lastBestSet(ex.name);
+
+    if(!last) return {text:"Noch kein Vergleich möglich.", cls:"neutral"};
+    if(!current) return {text:"Trag heute Gewicht und Wiederholungen ein, dann siehst du den Vergleich.", cls:"neutral"};
+
+    var weightDiff = round1(current.weight - last.weight);
+    var repsDiff = current.reps - last.reps;
+
+    if(weightDiff > 0){
+      return {
+        text:"+" + formatMacro(weightDiff) + " kg stärker als letztes Mal",
+        cls:""
+      };
+    }
+
+    if(weightDiff < 0){
+      return {
+        text:formatMacro(Math.abs(weightDiff)) + " kg unter letztem Mal",
+        cls:"neutral"
+      };
+    }
+
+    if(repsDiff > 0){
+      return {
+        text:"+" + repsDiff + (repsDiff === 1 ? " Wiederholung" : " Wiederholungen") + " mehr als letztes Mal",
+        cls:""
+      };
+    }
+
+    if(repsDiff < 0){
+      return {
+        text:Math.abs(repsDiff) + (Math.abs(repsDiff) === 1 ? " Wiederholung" : " Wiederholungen") + " weniger als letztes Mal",
+        cls:"neutral"
+      };
+    }
+
+    return {text:"Gleich wie letztes Mal", cls:"neutral"};
+  }
+
   function dayTrainingHistory(dayKey){
     var data = currentData();
     return (data.trainingHistory || [])
@@ -2546,6 +2630,7 @@
     if(!row) return;
     row[field] = value;
     saveData(state.profile, data);
+    render();
   }
 
   function toggleExerciseSetDone(dayKey, exId, setIndex){
@@ -2738,10 +2823,13 @@
             '</div>';
           }).join("");
 
+          var progressInfo = exerciseProgressText(ex);
+
           return '<div class="exercise-card">' +
             '<div class="exercise-card-head">' +
               '<div><div class="exercise-name">' + escapeHtml(ex.name) + '</div>' +
                 '<div class="exercise-history-hint">' + escapeHtml(exerciseHistoryHint(ex.name)) + '</div>' +
+                '<div class="exercise-progress' + (progressInfo.cls ? ' ' + progressInfo.cls : '') + '">' + escapeHtml(progressInfo.text) + '</div>' +
               '</div>' +
               '<button class="item-remove" data-action="removeExercise" data-day="' + d.key + '" data-item="' + ex.id + '">&times;</button>' +
             '</div>' +
