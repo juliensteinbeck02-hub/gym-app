@@ -1258,6 +1258,33 @@
     font-weight:800;
   }
 
+
+  .copy-training-wrap{
+    margin:12px 0 14px;
+    padding:11px;
+    border:1px solid rgba(118,185,255,.20);
+    border-radius:13px;
+    background:rgba(118,185,255,.035);
+  }
+  .copy-training-label{
+    font-size:10px;
+    color:var(--ink-soft);
+    margin-bottom:7px;
+    font-weight:700;
+  }
+  .copy-training-wrap .copy-training-btn{
+    display:block !important;
+    width:100%;
+    margin:0 !important;
+    border:1px solid rgba(118,185,255,.35);
+    background:rgba(118,185,255,.11);
+    color:#a9d2ff;
+    border-radius:11px;
+    padding:11px 12px;
+    font-size:11.5px;
+    font-weight:850;
+  }
+
 </style>
 </head>
 <body class="app-locked">
@@ -1532,6 +1559,7 @@
 </div>
 
 
+<!-- build: training-copy-v2 -->
 <script>
 (function(){
   "use strict";
@@ -3260,8 +3288,12 @@
         '</div>' +
         '<div class="plan-card-body">' +
           typeSwitch +
-          '<button type="button" class="copy-training-btn" data-action="copyTrainingDay" data-day="' + d.key + '">Trainingstag von ' +
-            (state.profile === "Julien" ? "Soraia" : "Julien") + ' übernehmen</button>' +
+          '<div class="copy-training-wrap">' +
+            '<div class="copy-training-label">Plan vom anderen Profil</div>' +
+            '<button type="button" class="copy-training-btn" data-action="copyTrainingDay" data-day="' + d.key + '">' +
+              'Trainingstag von ' + (state.profile === "Julien" ? "Soraia" : "Julien") + ' übernehmen' +
+            '</button>' +
+          '</div>' +
           bodyExtra +
         '</div>' +
       '</div>';
