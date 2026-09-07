@@ -644,6 +644,51 @@
     border-radius:14px!important;
   }
 
+
+  #barcodeReader{position:relative;}
+  #barcodeReader .zbar-video{
+    display:block;
+    width:100%;
+    height:260px;
+    object-fit:cover;
+    border-radius:14px;
+  }
+  #barcodeReader .zbar-guide{
+    position:absolute;
+    left:7%;
+    right:7%;
+    top:50%;
+    height:34%;
+    transform:translateY(-50%);
+    border:2px solid rgba(98,224,184,.88);
+    border-radius:12px;
+    box-shadow:0 0 0 999px rgba(0,0,0,.23), 0 0 20px rgba(98,224,184,.18);
+    pointer-events:none;
+  }
+  #barcodeReader .zbar-guide::before{
+    content:"";
+    position:absolute;
+    left:10%;
+    right:10%;
+    top:50%;
+    height:1px;
+    background:rgba(98,224,184,.8);
+    box-shadow:0 0 10px rgba(98,224,184,.6);
+  }
+  #barcodeReader .zbar-badge{
+    position:absolute;
+    left:10px;
+    top:10px;
+    padding:5px 8px;
+    border-radius:999px;
+    background:rgba(5,9,14,.72);
+    color:#b7c3d3;
+    font-size:10px;
+    font-weight:700;
+    backdrop-filter:blur(8px);
+    pointer-events:none;
+  }
+
   .barcode-status{
     min-height:18px;
     margin:10px 2px 0;
@@ -830,13 +875,12 @@
       <button type="submit">Suchen</button>
     </form>
     <div class="food-mode-row" id="foodModeRow">
-      <button type="button" class="barcode-btn" id="barcodeScanBtn">📷 Barcode fotografieren</button>
-      <input id="barcodePhotoInput" type="file" accept="image/*" capture="environment" style="display:none">
+      <button type="button" class="barcode-btn" id="barcodeScanBtn">📷 Barcode scannen</button>
       <button type="button" class="barcode-btn secondary" id="barcodeManualBtn">Barcode eingeben</button>
     </div>
     <div class="barcode-panel" id="barcodePanel">
       <div id="barcodeReader"></div>
-      <div class="barcode-status" id="barcodeStatus">Mach ein scharfes Foto vom Barcode.</div>
+      <div class="barcode-status" id="barcodeStatus">Halte den Barcode ruhig vor die Kamera.</div>
       <form class="barcode-manual-form" id="barcodeManualForm">
         <input id="barcodeInput" inputmode="numeric" autocomplete="off" placeholder="EAN / Barcode eingeben">
         <button type="submit">Prüfen</button>
@@ -900,7 +944,6 @@
 </script>
 
 
-<script src="https://unpkg.com/@taluks/html5-qrcode@2.4.0/minified/html5-qrcode.min.js"></script>
 
 
 <script>
@@ -919,7 +962,12 @@
   var selectedFood = null;
   var barcodeScanner = null;
   var barcodeScanLocked = false;
-  var html5BarcodeScanner = null;
+  var barcodeStream = null;
+  var barcodeVideo = null;
+  var barcodeCanvas = null;
+  var barcodeLoopTimer = null;
+  var barcodeScanBusy = false;
+  var zbarModulePromise = null;
   var pendingBarcode = "";
   var CUSTOM_PRODUCTS_PROFILE = "__products__";
 
@@ -1326,7 +1374,7 @@
     if(custom) custom.classList.remove('show');
     var inp = document.getElementById('barcodeInput');
     if(inp) inp.value = '';
-    setBarcodeStatus('Mach ein scharfes Foto vom Barcode.', false);
+    setBarcodeStatus('Halte den Barcode ruhig vor die Kamera.', false);
   }
 
   function showBarcodePanel(manualOnly){
@@ -1343,86 +1391,187 @@
     }
   }
 
+  async function loadZbarModule(){
+    if(!zbarModulePromise){
+      zbarModulePromise = import('https://cdn.jsdelivr.net/npm/@undecaf/zbar-wasm@0.11.0/dist/index.js');
+    }
+    return zbarModulePromise;
+  }
+
+  function chooseDetectedBarcode(symbols){
+    if(!symbols || !symbols.length) return '';
+
+    var preferred = [];
+    var fallback = [];
+    symbols.forEach(function(symbol){
+      try{
+        var value = normalizeBarcode(symbol.decode ? symbol.decode() : '');
+        var type = String(symbol.typeName || symbol.type || '').toUpperCase();
+        if(!/^\d{8,14}$/.test(value)) return;
+        if(type.indexOf('EAN') !== -1 || type.indexOf('UPC') !== -1){
+          preferred.push(value);
+        }else{
+          fallback.push(value);
+        }
+      }catch(e){}
+    });
+
+    return preferred[0] || fallback[0] || '';
+  }
+
+  function captureBarcodeFrame(cropOnly){
+    if(!barcodeVideo || !barcodeCanvas || !barcodeVideo.videoWidth || !barcodeVideo.videoHeight) return null;
+
+    var vw = barcodeVideo.videoWidth;
+    var vh = barcodeVideo.videoHeight;
+    var sx = 0, sy = 0, sw = vw, sh = vh;
+
+    if(cropOnly){
+      sw = Math.floor(vw * 0.92);
+      sh = Math.floor(vh * 0.42);
+      sx = Math.floor((vw - sw) / 2);
+      sy = Math.floor((vh - sh) / 2);
+    }
+
+    var maxWidth = 1280;
+    var scale = Math.min(1, maxWidth / sw);
+    var cw = Math.max(1, Math.floor(sw * scale));
+    var ch = Math.max(1, Math.floor(sh * scale));
+
+    barcodeCanvas.width = cw;
+    barcodeCanvas.height = ch;
+    var ctx = barcodeCanvas.getContext('2d', {willReadFrequently:true});
+    ctx.drawImage(barcodeVideo, sx, sy, sw, sh, 0, 0, cw, ch);
+    return ctx.getImageData(0, 0, cw, ch);
+  }
+
+  async function scanCurrentBarcodeFrame(){
+    if(barcodeScanLocked || barcodeScanBusy || !barcodeStream) return;
+    barcodeScanBusy = true;
+
+    try{
+      var zbar = await loadZbarModule();
+
+      // First scan the highlighted center strip. It is faster and avoids background clutter.
+      var imageData = captureBarcodeFrame(true);
+      var symbols = imageData ? await zbar.scanImageData(imageData) : [];
+      var code = chooseDetectedBarcode(symbols);
+
+      // Every few attempts, also scan the complete camera frame as a fallback.
+      scanCurrentBarcodeFrame._count = (scanCurrentBarcodeFrame._count || 0) + 1;
+      if(!code && scanCurrentBarcodeFrame._count % 4 === 0){
+        imageData = captureBarcodeFrame(false);
+        symbols = imageData ? await zbar.scanImageData(imageData) : [];
+        code = chooseDetectedBarcode(symbols);
+      }
+
+      if(code && !barcodeScanLocked){
+        barcodeScanLocked = true;
+        if(navigator.vibrate){ try{ navigator.vibrate(80); }catch(e){} }
+        setBarcodeStatus('Barcode erkannt: ' + code, false);
+        await stopBarcodeScanner(true);
+        await lookupBarcode(code);
+        return;
+      }
+    }catch(err){
+      console.error('ZBar scan failed', err);
+      setBarcodeStatus('Barcode-Erkennung läuft nicht korrekt. Du kannst den Barcode unten manuell eingeben.', true);
+    }finally{
+      barcodeScanBusy = false;
+    }
+
+    if(barcodeStream && !barcodeScanLocked){
+      barcodeLoopTimer = setTimeout(scanCurrentBarcodeFrame, 180);
+    }
+  }
+
   async function startBarcodeScanner(){
     showBarcodePanel(false);
     await stopBarcodeScanner();
 
-    var input = document.getElementById('barcodePhotoInput');
-    if(!input){
-      setBarcodeStatus('Foto-Auswahl ist nicht verfügbar. Du kannst den Barcode unten manuell eingeben.', true);
-      return;
-    }
-
-    input.value = '';
-    setBarcodeStatus('Kamera öffnen und den Barcode möglichst gerade und scharf fotografieren.', false);
-    input.click();
-  }
-
-  async function scanBarcodePhoto(file){
-    if(!file) return;
-
-    if(typeof Html5Qrcode === 'undefined'){
-      setBarcodeStatus('Barcode-Erkennung konnte nicht geladen werden. Du kannst den Barcode unten manuell eingeben.', true);
+    if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+      setBarcodeStatus('Kamera ist in diesem Browser nicht verfügbar. Du kannst den Barcode unten manuell eingeben.', true);
       return;
     }
 
     try{
       barcodeScanLocked = false;
-      setBarcodeStatus('Foto wird ausgewertet …', false);
+      barcodeScanBusy = false;
+      setBarcodeStatus('ZBar wird geladen und die Kamera gestartet …', false);
 
-      var formats = [];
-      if(typeof Html5QrcodeSupportedFormats !== 'undefined'){
-        formats = [
-          Html5QrcodeSupportedFormats.EAN_13,
-          Html5QrcodeSupportedFormats.EAN_8,
-          Html5QrcodeSupportedFormats.UPC_A,
-          Html5QrcodeSupportedFormats.UPC_E,
-          Html5QrcodeSupportedFormats.CODE_128
-        ];
-      }
+      // Preload WASM before opening the stream so failures are visible immediately.
+      await loadZbarModule();
+
+      var constraints = {
+        audio:false,
+        video:{
+          facingMode:{ideal:'environment'},
+          width:{ideal:1920},
+          height:{ideal:1080},
+          frameRate:{ideal:30, max:30}
+        }
+      };
+
+      barcodeStream = await navigator.mediaDevices.getUserMedia(constraints);
+      barcodeScanner = 'zbar-wasm';
 
       var reader = document.getElementById('barcodeReader');
-      if(reader) reader.innerHTML = '';
+      reader.innerHTML = '';
 
-      html5BarcodeScanner = new Html5Qrcode('barcodeReader', {
-        formatsToSupport: formats.length ? formats : undefined,
-        verbose: false
-      });
-      barcodeScanner = 'photo';
+      barcodeVideo = document.createElement('video');
+      barcodeVideo.className = 'zbar-video';
+      barcodeVideo.setAttribute('playsinline', '');
+      barcodeVideo.setAttribute('autoplay', '');
+      barcodeVideo.setAttribute('muted', '');
+      barcodeVideo.muted = true;
+      barcodeVideo.srcObject = barcodeStream;
 
-      var decodedText = await html5BarcodeScanner.scanFile(file, true);
-      var code = normalizeBarcode(decodedText);
+      var guide = document.createElement('div');
+      guide.className = 'zbar-guide';
+      var badge = document.createElement('div');
+      badge.className = 'zbar-badge';
+      badge.textContent = 'ZBar · EAN / UPC';
 
-      if(!/^\d{8,14}$/.test(code)){
-        throw new Error('Kein gültiger EAN/UPC-Code erkannt');
-      }
+      reader.appendChild(barcodeVideo);
+      reader.appendChild(guide);
+      reader.appendChild(badge);
 
-      barcodeScanLocked = true;
-      setBarcodeStatus('Barcode erkannt: ' + code, false);
-      try{ await html5BarcodeScanner.clear(); }catch(e){}
-      html5BarcodeScanner = null;
-      barcodeScanner = null;
+      barcodeCanvas = document.createElement('canvas');
 
-      await lookupBarcode(code);
+      await barcodeVideo.play();
+
+      // Give autofocus a brief moment to settle before the first decode.
+      setBarcodeStatus('Barcode groß und waagerecht in den grünen Rahmen halten.', false);
+      barcodeLoopTimer = setTimeout(scanCurrentBarcodeFrame, 500);
     }catch(err){
-      console.error('Barcode photo decode failed', err);
-      try{
-        if(html5BarcodeScanner){ await html5BarcodeScanner.clear(); }
-      }catch(e){}
-      html5BarcodeScanner = null;
-      barcodeScanner = null;
-      setBarcodeStatus('Barcode im Foto nicht erkannt. Bitte näher, gerade und scharf fotografieren oder den Code unten eingeben.', true);
+      console.error('ZBar camera failed', err);
+      await stopBarcodeScanner();
+      var msg = (err && err.name === 'NotAllowedError')
+        ? 'Kamerazugriff wurde nicht erlaubt. Bitte Safari-Kamerazugriff aktivieren oder den Barcode manuell eingeben.'
+        : 'Scanner konnte nicht gestartet werden. Du kannst den Barcode unten manuell eingeben.';
+      setBarcodeStatus(msg, true);
     }
   }
 
-  async function stopBarcodeScanner(){
-    barcodeScanLocked = false;
-    if(html5BarcodeScanner){
-      try{ if(html5BarcodeScanner.isScanning){ await html5BarcodeScanner.stop(); } }catch(e){}
-      try{ await html5BarcodeScanner.clear(); }catch(e){}
+  async function stopBarcodeScanner(keepStatus){
+    if(barcodeLoopTimer){
+      clearTimeout(barcodeLoopTimer);
+      barcodeLoopTimer = null;
     }
-    html5BarcodeScanner = null;
+
+    if(barcodeStream){
+      try{
+        barcodeStream.getTracks().forEach(function(track){ track.stop(); });
+      }catch(e){}
+    }
+
+    barcodeStream = null;
     barcodeScanner = null;
+    barcodeVideo = null;
+    barcodeCanvas = null;
+    barcodeScanBusy = false;
+    if(!keepStatus) barcodeScanLocked = false;
+
     var reader = document.getElementById('barcodeReader');
     if(reader) reader.innerHTML = '';
   }
@@ -1980,10 +2129,6 @@
 
 
   document.getElementById('barcodeScanBtn').addEventListener('click', startBarcodeScanner);
-  document.getElementById('barcodePhotoInput').addEventListener('change', function(e){
-    var file = e.target.files && e.target.files[0];
-    if(file) scanBarcodePhoto(file);
-  });
   document.getElementById('barcodeManualBtn').addEventListener('click', function(){
     stopBarcodeScanner();
     showBarcodePanel(true);
