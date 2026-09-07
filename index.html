@@ -870,6 +870,86 @@
     .goal-grid,.goal-result{grid-template-columns:1fr;}
   }
 
+
+  /* ---------- Heute Dashboard ---------- */
+  .dash-hero{
+    border:1px solid var(--line);
+    background:linear-gradient(180deg, rgba(98,224,184,.08), rgba(255,255,255,.025));
+    border-radius:20px;
+    padding:17px;
+    margin-bottom:12px;
+  }
+  .dash-eyebrow{font-size:11px;color:var(--ink-soft);margin-bottom:4px;}
+  .dash-title{font-size:22px;font-weight:800;letter-spacing:-.4px;}
+  .dash-sub{font-size:12px;color:var(--ink-soft);margin-top:4px;}
+  .dash-grid{
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:9px;
+    margin-bottom:12px;
+  }
+  .dash-card{
+    border:1px solid var(--line);
+    background:rgba(255,255,255,.03);
+    border-radius:16px;
+    padding:14px;
+  }
+  .dash-card.full{grid-column:1/-1;}
+  .dash-label{font-size:10.5px;color:var(--ink-soft);margin-bottom:5px;}
+  .dash-value{font-size:20px;font-weight:800;line-height:1.1;}
+  .dash-small{font-size:11px;color:var(--ink-soft);margin-top:5px;line-height:1.4;}
+  .macro-row{margin-top:11px;}
+  .macro-head{
+    display:flex;justify-content:space-between;gap:10px;
+    font-size:11px;color:var(--ink-soft);margin-bottom:5px;
+  }
+  .macro-track{
+    height:8px;border-radius:999px;background:rgba(255,255,255,.06);
+    overflow:hidden;border:1px solid rgba(255,255,255,.03);
+  }
+  .macro-fill{
+    height:100%;width:0;border-radius:999px;background:currentColor;
+    transition:width .25s ease;
+  }
+  .macro-protein{color:#8fe7c8;}
+  .macro-carbs{color:#f5c36b;}
+  .macro-fat{color:#d1a3ff;}
+  .macro-kcal{color:#76b9ff;}
+  .dash-action{
+    width:100%;border:1px solid rgba(98,224,184,.3);
+    background:rgba(98,224,184,.09);color:#91ebc9;
+    border-radius:12px;padding:11px 12px;font-weight:750;font-size:12px;
+    margin-top:10px;
+  }
+  .weight-quick{
+    display:grid;grid-template-columns:1fr auto;gap:8px;margin-top:10px;
+  }
+  .weight-quick input{
+    min-width:0;border:1px solid var(--line);background:#0d131c;color:var(--ink);
+    border-radius:11px;padding:10px 11px;font-size:14px;outline:none;
+  }
+  .weight-quick button{
+    border:0;background:#8fe7c8;color:#07100d;border-radius:11px;
+    padding:10px 13px;font-weight:800;
+  }
+  .weight-list{
+    margin-top:10px;display:flex;flex-direction:column;gap:7px;
+  }
+  .weight-item{
+    display:flex;justify-content:space-between;align-items:center;gap:8px;
+    border-top:1px solid rgba(255,255,255,.05);padding-top:7px;
+    font-size:11.5px;
+  }
+  .weight-item span:first-child{color:var(--ink-soft);}
+  .weight-item strong{font-size:12px;}
+  .dash-empty{
+    color:var(--ink-soft);font-size:12px;line-height:1.5;
+  }
+  @media(max-width:390px){
+    .dash-grid{grid-template-columns:1fr;}
+    .dash-card.full{grid-column:auto;}
+  }
+
 </style>
 </head>
 <body class="app-locked">
@@ -895,6 +975,67 @@
   </header>
 
   <main id="views">
+
+    <!-- Heute -->
+    <section class="view" id="view-heute">
+      <div class="dash-hero">
+        <div class="dash-eyebrow" id="dashDate"></div>
+        <div class="dash-title">Heute · <span id="dashProfile">Julien</span></div>
+        <div class="dash-sub" id="dashGoalLine">Deine Tagesübersicht</div>
+      </div>
+
+      <div class="dash-grid">
+        <div class="dash-card">
+          <div class="dash-label">Kalorien</div>
+          <div class="dash-value" id="dashCalories">0 / –</div>
+          <div class="dash-small" id="dashCaloriesLeft">Ziel noch nicht eingerichtet</div>
+          <div class="macro-row">
+            <div class="macro-track"><div class="macro-fill macro-kcal" id="dashKcalBar"></div></div>
+          </div>
+        </div>
+
+        <div class="dash-card">
+          <div class="dash-label">Gewicht</div>
+          <div class="dash-value" id="dashWeight">– kg</div>
+          <div class="dash-small" id="dashWeightGoal">Zielgewicht fehlt</div>
+        </div>
+
+        <div class="dash-card full">
+          <div class="dash-label">Makros heute</div>
+          <div class="macro-row">
+            <div class="macro-head"><span>Eiweiß</span><span id="dashProteinText">0 / – g</span></div>
+            <div class="macro-track"><div class="macro-fill macro-protein" id="dashProteinBar"></div></div>
+          </div>
+          <div class="macro-row">
+            <div class="macro-head"><span>Kohlenhydrate</span><span id="dashCarbsText">0 / – g</span></div>
+            <div class="macro-track"><div class="macro-fill macro-carbs" id="dashCarbsBar"></div></div>
+          </div>
+          <div class="macro-row">
+            <div class="macro-head"><span>Fett</span><span id="dashFatText">0 / – g</span></div>
+            <div class="macro-track"><div class="macro-fill macro-fat" id="dashFatBar"></div></div>
+          </div>
+          <button class="dash-action" type="button" data-go="ernaehrung">Ernährung für heute öffnen</button>
+        </div>
+
+        <div class="dash-card full">
+          <div class="dash-label">Training heute</div>
+          <div class="dash-value" id="dashTraining">Rest Day</div>
+          <div class="dash-small" id="dashTrainingSub">Kein Training eingetragen.</div>
+          <button class="dash-action" type="button" data-go="training">Trainingsplan öffnen</button>
+        </div>
+
+        <div class="dash-card full">
+          <div class="dash-label">Gewicht eintragen</div>
+          <div class="dash-small">Die Messung wird nur im aktuell ausgewählten Profil gespeichert und synchronisiert.</div>
+          <div class="weight-quick">
+            <input id="quickWeight" type="number" min="35" max="350" step="0.1" inputmode="decimal" placeholder="Gewicht in kg">
+            <button type="button" id="saveQuickWeight">Speichern</button>
+          </div>
+          <div class="dash-small" id="weightProgressText"></div>
+          <div class="weight-list" id="weightHistoryList"></div>
+        </div>
+      </div>
+    </section>
 
     <!-- Ernährung -->
     <section class="view" id="view-ernaehrung">
@@ -1003,7 +1144,8 @@
   </main>
 
   <nav class="tabbar">
-    <button class="tab-btn active" data-view="ernaehrung"><span class="tab-dot"></span>Ernährung</button>
+    <button class="tab-btn active" data-view="heute"><span class="tab-dot"></span>Heute</button>
+    <button class="tab-btn" data-view="ernaehrung"><span class="tab-dot"></span>Ernährung</button>
     <button class="tab-btn" data-view="training"><span class="tab-dot"></span>Training</button>
     <button class="tab-btn" data-view="einstellungen"><span class="tab-dot"></span>Einstellungen</button>
   </nav>
@@ -1154,7 +1296,7 @@
 
   var state = {
     profile: localStorage.getItem("planapp_active_profile") || "Julien",
-    view: "ernaehrung",
+    view: "heute",
     openCards: {}
   };
 
@@ -1183,7 +1325,7 @@
   }
 
   function emptyData(){
-    return { nutrition: { days: emptyNutritionDays() }, training: { days: emptyTrainingDays() }, profileGoal: {} };
+    return { nutrition: { days: emptyNutritionDays() }, training: { days: emptyTrainingDays() }, profileGoal: {}, weightHistory: [] };
   }
 
   function loadData(profile){
@@ -1219,6 +1361,9 @@
       });
       if(!parsed.profileGoal || typeof parsed.profileGoal !== "object"){
         parsed.profileGoal = {};
+      }
+      if(!Array.isArray(parsed.weightHistory)){
+        parsed.weightHistory = [];
       }
       return parsed;
     }catch(e){
@@ -1905,6 +2050,191 @@
     }
   }
 
+
+  function todayDayKey(){
+    var map = ["so","mo","di","mi","do","fr","sa"];
+    return map[new Date().getDay()];
+  }
+
+  function todayDayLabel(){
+    var key = todayDayKey();
+    var found = DAYS.find(function(d){ return d.key === key; });
+    return found ? found.label : "Heute";
+  }
+
+  function todayDateText(){
+    try{
+      return new Intl.DateTimeFormat("de-DE", {
+        weekday:"long", day:"2-digit", month:"2-digit", year:"numeric"
+      }).format(new Date());
+    }catch(e){
+      return new Date().toLocaleDateString("de-DE");
+    }
+  }
+
+  function todayNutritionTotals(){
+    var data = currentData();
+    var day = data.nutrition.days[todayDayKey()];
+    var totals = {kcal:0, protein:0, carbs:0, fat:0};
+    if(!day || !day.meals) return totals;
+
+    MEALS.forEach(function(m){
+      var items = Array.isArray(day.meals[m.key]) ? day.meals[m.key] : [];
+      items.forEach(function(item){
+        totals.kcal += numberOrZero(item.kcal);
+        totals.protein += numberOrZero(item.protein);
+        totals.carbs += numberOrZero(item.carbs);
+        totals.fat += numberOrZero(item.fat);
+      });
+    });
+    return totals;
+  }
+
+  function pct(value, target){
+    if(!target || target <= 0) return 0;
+    return Math.max(0, Math.min(100, (value / target) * 100));
+  }
+
+  function setDashBar(id, value, target){
+    var el = document.getElementById(id);
+    if(el) el.style.width = pct(value, target) + "%";
+  }
+
+  function saveTodayWeight(){
+    var input = document.getElementById("quickWeight");
+    if(!input) return;
+    var weight = goalNumber(input.value);
+    if(weight < 35 || weight > 350){
+      showToast("Bitte gültiges Gewicht eingeben");
+      return;
+    }
+
+    var data = currentData();
+    if(!Array.isArray(data.weightHistory)) data.weightHistory = [];
+    if(!data.profileGoal || typeof data.profileGoal !== "object") data.profileGoal = {};
+
+    var today = new Date();
+    var dateKey = today.getFullYear() + "-" +
+      String(today.getMonth()+1).padStart(2,"0") + "-" +
+      String(today.getDate()).padStart(2,"0");
+
+    var existing = data.weightHistory.find(function(x){ return x.date === dateKey; });
+    if(existing){
+      existing.weight = round1(weight);
+    }else{
+      data.weightHistory.push({date:dateKey, weight:round1(weight)});
+    }
+
+    data.weightHistory.sort(function(a,b){ return a.date.localeCompare(b.date); });
+    data.profileGoal.weight = String(round1(weight));
+    saveData(state.profile, data);
+    input.value = "";
+    render();
+    showToast("Gewicht gespeichert");
+  }
+
+  function renderWeightHistory(){
+    var data = currentData();
+    var list = document.getElementById("weightHistoryList");
+    var progress = document.getElementById("weightProgressText");
+    if(!list || !progress) return;
+
+    var history = Array.isArray(data.weightHistory) ? data.weightHistory.slice() : [];
+    history.sort(function(a,b){ return b.date.localeCompare(a.date); });
+
+    if(!history.length){
+      list.innerHTML = '<div class="dash-empty">Noch keine Gewichtsmessung gespeichert.</div>';
+      progress.textContent = "";
+      return;
+    }
+
+    var ascending = history.slice().sort(function(a,b){ return a.date.localeCompare(b.date); });
+    var first = ascending[0];
+    var last = ascending[ascending.length-1];
+    var change = numberOrZero(last.weight) - numberOrZero(first.weight);
+    progress.textContent = history.length > 1
+      ? "Seit der ersten Messung: " + (change > 0 ? "+" : "") + change.toFixed(1).replace(".", ",") + " kg"
+      : "Erste Messung gespeichert.";
+
+    list.innerHTML = history.slice(0,5).map(function(item){
+      var d = item.date.split("-");
+      var label = d.length === 3 ? (d[2] + "." + d[1] + "." + d[0]) : item.date;
+      return '<div class="weight-item"><span>' + escapeHtml(label) + '</span><strong>' +
+        formatMacro(item.weight) + ' kg</strong></div>';
+    }).join("");
+  }
+
+  function renderDashboard(){
+    var totals = todayNutritionTotals();
+    var g = goalData();
+    var calc = calculateGoalTargets(g);
+
+    var profileEl = document.getElementById("dashProfile");
+    var dateEl = document.getElementById("dashDate");
+    var goalLine = document.getElementById("dashGoalLine");
+    if(profileEl) profileEl.textContent = state.profile;
+    if(dateEl) dateEl.textContent = todayDateText();
+
+    var caloriesTarget = calc ? Math.round(calc.calories) : 0;
+    var proteinTarget = calc ? Math.round(calc.protein) : 0;
+    var carbsTarget = calc ? Math.round(calc.carbs) : 0;
+    var fatTarget = calc ? Math.round(calc.fat) : 0;
+
+    document.getElementById("dashCalories").textContent =
+      Math.round(totals.kcal) + " / " + (caloriesTarget || "–") + " kcal";
+
+    if(calc){
+      var left = caloriesTarget - totals.kcal;
+      document.getElementById("dashCaloriesLeft").textContent =
+        left >= 0 ? Math.round(left) + " kcal übrig" : Math.abs(Math.round(left)) + " kcal über Ziel";
+      goalLine.textContent = calc.direction === "zunehmen"
+        ? "Aufbau · Ziel " + Math.round(calc.calories) + " kcal"
+        : calc.direction === "abnehmen"
+          ? "Abnahme · Ziel " + Math.round(calc.calories) + " kcal"
+          : "Gewicht halten · " + Math.round(calc.calories) + " kcal";
+    }else{
+      document.getElementById("dashCaloriesLeft").textContent = "Ziel noch nicht eingerichtet";
+      goalLine.textContent = "Körperdaten unter Einstellungen ergänzen";
+    }
+
+    document.getElementById("dashProteinText").textContent =
+      Math.round(totals.protein) + " / " + (proteinTarget || "–") + " g";
+    document.getElementById("dashCarbsText").textContent =
+      Math.round(totals.carbs) + " / " + (carbsTarget || "–") + " g";
+    document.getElementById("dashFatText").textContent =
+      Math.round(totals.fat) + " / " + (fatTarget || "–") + " g";
+
+    setDashBar("dashKcalBar", totals.kcal, caloriesTarget);
+    setDashBar("dashProteinBar", totals.protein, proteinTarget);
+    setDashBar("dashCarbsBar", totals.carbs, carbsTarget);
+    setDashBar("dashFatBar", totals.fat, fatTarget);
+
+    var weight = goalNumber(g.weight);
+    var target = goalNumber(g.target);
+    document.getElementById("dashWeight").textContent = weight ? formatMacro(weight) + " kg" : "– kg";
+    if(weight && target){
+      var diff = target - weight;
+      document.getElementById("dashWeightGoal").textContent =
+        "Ziel " + formatMacro(target) + " kg · " +
+        (Math.abs(diff) < .05 ? "Ziel erreicht" : formatMacro(Math.abs(diff)) + " kg " + (diff > 0 ? "bis zum Aufbauziel" : "bis zum Abnahmeziel"));
+    }else{
+      document.getElementById("dashWeightGoal").textContent = "Zielgewicht fehlt";
+    }
+
+    var data = currentData();
+    var trainDay = data.training.days[todayDayKey()];
+    var type = trainDay && trainDay.type ? trainDay.type : "rest";
+    var typeObj = DAY_TYPES.find(function(t){ return t.key === type; });
+    var exercises = trainDay && Array.isArray(trainDay.exercises) ? trainDay.exercises.length : 0;
+    document.getElementById("dashTraining").textContent = typeObj ? typeObj.label : "Rest Day";
+    document.getElementById("dashTrainingSub").textContent =
+      type === "rest"
+        ? "Heute ist kein Training geplant."
+        : exercises + (exercises === 1 ? " Übung eingetragen." : " Übungen eingetragen.");
+
+    renderWeightHistory();
+  }
+
   /* ---------- Rendering ---------- */
 
   function render(){
@@ -1921,6 +2251,7 @@
       b.classList.toggle("active", b.dataset.view === state.view);
     });
 
+    renderDashboard();
     renderNutrition();
     renderTraining();
     renderGoalCalculator();
@@ -2274,6 +2605,20 @@
 
   document.getElementById("goalActivity").addEventListener("change", function(e){
     saveGoalField("activity", e.target.value);
+  });
+
+
+  document.getElementById("saveQuickWeight").addEventListener("click", saveTodayWeight);
+  document.getElementById("quickWeight").addEventListener("keydown", function(e){
+    if(e.key === "Enter") saveTodayWeight();
+  });
+
+  document.querySelectorAll("[data-go]").forEach(function(btn){
+    btn.addEventListener("click", function(){
+      state.view = btn.dataset.go;
+      render();
+      window.scrollTo({top:0, behavior:"smooth"});
+    });
   });
 
   /* ---------- Export / Import / Reset ---------- */
