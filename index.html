@@ -1385,30 +1385,6 @@
     font-size:11px;
     font-weight:800;
   }
-  .water-goal-row{
-    display:grid;
-    grid-template-columns:1fr auto;
-    gap:7px;
-    margin-top:10px;
-  }
-  .water-goal-row input{
-    min-width:0;
-    border:1px solid var(--line);
-    background:#0d131c;
-    color:var(--ink);
-    border-radius:10px;
-    padding:9px 10px;
-    font-size:12px;
-  }
-  .water-goal-row button{
-    border:0;
-    border-radius:10px;
-    padding:9px 12px;
-    background:#8fe7c8;
-    color:#07100d;
-    font-size:11px;
-    font-weight:850;
-  }
   @media(max-width:390px){
     .weight-chart-stats{grid-template-columns:1fr 1fr;}
   }
@@ -1481,7 +1457,7 @@
         </div>
 
         <div class="dash-card full">
-          <div class="dash-label">Wasser heute</div>
+          <div class="dash-label">Wasser heute · automatisch berechnet</div>
           <div class="water-card">
             <div class="water-head">
               <div>
@@ -1564,15 +1540,6 @@
     <!-- Einstellungen -->
     <section class="view" id="view-einstellungen">
       <div class="view-head"><h2>Einstellungen</h2></div>
-
-      <div class="settings-block">
-        <h3>Wasserziel</h3>
-        <p>Lege dein tägliches Wasserziel für das aktuell ausgewählte Profil fest.</p>
-        <div class="water-goal-row">
-          <input id="waterGoalInput" type="number" min="500" max="10000" step="100" inputmode="numeric" placeholder="z. B. 3000">
-          <button type="button" id="saveWaterGoal">Speichern</button>
-        </div>
-      </div>
 
       <div class="settings-block">
         <h3>Aktuelles Profil</h3>
@@ -1845,7 +1812,7 @@
   }
 
   function emptyData(){
-    return { nutrition: { days: emptyNutritionDays() }, training: { days: emptyTrainingDays() }, profileGoal: {}, weightHistory: [], trainingHistory: [], foodFavorites: [], savedMeals: [], water: {goalMl:3000, days:{}} };
+    return { nutrition: { days: emptyNutritionDays() }, training: { days: emptyTrainingDays() }, profileGoal: {}, weightHistory: [], trainingHistory: [], foodFavorites: [], savedMeals: [], water: {days:{}} };
   }
 
   function loadData(profile){
@@ -1895,13 +1862,10 @@
         parsed.savedMeals = [];
       }
       if(!parsed.water || typeof parsed.water !== "object"){
-        parsed.water = {goalMl:3000, days:{}};
+        parsed.water = {days:{}};
       }
       if(!parsed.water.days || typeof parsed.water.days !== "object"){
         parsed.water.days = {};
-      }
-      if(!parsed.water.goalMl){
-        parsed.water.goalMl = 3000;
       }
 
       // Migration älterer Übungseinträge auf einzelne Sätze.
@@ -2929,10 +2893,29 @@
 
   function waterData(){
     var data = currentData();
-    if(!data.water || typeof data.water !== "object") data.water = {goalMl:3000,days:{}};
+    if(!data.water || typeof data.water !== "object") data.water = {days:{}};
     if(!data.water.days || typeof data.water.days !== "object") data.water.days = {};
-    if(!data.water.goalMl) data.water.goalMl = 3000;
     return data.water;
+  }
+
+  function automaticWaterGoalMl(){
+    var g = goalData();
+    var weight = goalNumber(g.weight);
+    var height = goalNumber(g.height);
+
+    if(!weight) return 0;
+
+    // Hauptfaktor Körpergewicht: ungefähr 35 ml pro kg.
+    var goal = weight * 35;
+
+    // Körpergröße als leichte Zusatzanpassung.
+    if(height){
+      goal += (height - 170) * 5;
+    }
+
+    // Begrenzung auf einen sinnvollen App-Bereich und auf 50 ml gerundet.
+    goal = Math.max(1500, Math.min(5000, goal));
+    return Math.round(goal / 50) * 50;
   }
 
   function todayWaterMl(){
@@ -2942,7 +2925,7 @@
 
   function addWater(ml){
     var data = currentData();
-    if(!data.water || typeof data.water !== "object") data.water = {goalMl:3000,days:{}};
+    if(!data.water || typeof data.water !== "object") data.water = {days:{}};
     if(!data.water.days || typeof data.water.days !== "object") data.water.days = {};
     var key = localDateKey();
     data.water.days[key] = Math.max(0, numberOrZero(data.water.days[key]) + numberOrZero(ml));
@@ -2951,44 +2934,32 @@
     showToast("Wasser hinzugefügt");
   }
 
-  function setWaterGoal(){
-    var input = document.getElementById("waterGoalInput");
-    if(!input) return;
-    var goal = Math.round(goalNumber(input.value));
-    if(goal < 500 || goal > 10000){
-      showToast("Bitte Wasserziel zwischen 500 und 10000 ml eingeben");
-      return;
-    }
-    var data = currentData();
-    if(!data.water || typeof data.water !== "object") data.water = {goalMl:goal,days:{}};
-    data.water.goalMl = goal;
-    if(!data.water.days || typeof data.water.days !== "object") data.water.days = {};
-    saveData(state.profile, data);
-    render();
-    showToast("Wasserziel gespeichert");
-  }
-
   function renderWater(){
-    var w = waterData();
     var current = todayWaterMl();
-    var goal = numberOrZero(w.goalMl) || 3000;
-    var litersCurrent = current / 1000;
-    var litersGoal = goal / 1000;
-    var left = Math.max(0, goal - current);
+    var goal = automaticWaterGoalMl();
 
     var val = document.getElementById("dashWaterValue");
     var leftEl = document.getElementById("dashWaterLeft");
     var bar = document.getElementById("dashWaterBar");
-    var goalInput = document.getElementById("waterGoalInput");
+
+    if(!goal){
+      if(val) val.textContent = "– / – L";
+      if(leftEl) leftEl.textContent = "Größe und Gewicht unter Einstellungen eintragen";
+      if(bar) bar.style.width = "0%";
+      return;
+    }
+
+    var litersCurrent = current / 1000;
+    var litersGoal = goal / 1000;
+    var left = Math.max(0, goal - current);
 
     if(val) val.textContent = litersCurrent.toFixed(1).replace(".", ",") + " / " + litersGoal.toFixed(1).replace(".", ",") + " L";
     if(leftEl){
       leftEl.textContent = left > 0
-        ? (left/1000).toFixed(1).replace(".", ",") + " L übrig"
-        : "Tagesziel erreicht ✓";
+        ? (left/1000).toFixed(1).replace(".", ",") + " L übrig · automatisch aus Größe & Gewicht"
+        : "Tagesziel erreicht ✓ · automatisch aus Größe & Gewicht";
     }
     if(bar) bar.style.width = Math.min(100, (current/goal)*100) + "%";
-    if(goalInput && document.activeElement !== goalInput) goalInput.value = String(goal);
   }
 
   function weightHistoryForRange(){
@@ -3966,8 +3937,6 @@
       addWater(Number(btn.dataset.waterAdd));
     });
   });
-
-  document.getElementById("saveWaterGoal").addEventListener("click", setWaterGoal);
 
   document.querySelectorAll("[data-weight-range]").forEach(function(btn){
     btn.addEventListener("click", function(){
