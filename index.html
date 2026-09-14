@@ -1966,12 +1966,12 @@
   var input = document.getElementById("passwordInput");
   var error = document.getElementById("passwordError");
   function unlock(){ document.body.classList.remove("app-locked"); gate.classList.add("hidden"); }
-  if(sessionStorage.getItem(SESSION_KEY) === "1") unlock();
+  if(localStorage.getItem(SESSION_KEY) === "1") unlock();
   else setTimeout(function(){ input.focus(); }, 50);
   form.addEventListener("submit", function(e){
     e.preventDefault();
     if(input.value === ACCESS_PASSWORD){
-      sessionStorage.setItem(SESSION_KEY,"1"); error.textContent=""; unlock();
+      localStorage.setItem(SESSION_KEY,"1"); error.textContent=""; unlock();
     }else{
       error.textContent="Passwort ist nicht korrekt."; input.value=""; input.focus();
     }
