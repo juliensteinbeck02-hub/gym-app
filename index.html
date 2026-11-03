@@ -1601,6 +1601,167 @@
   }
 
 </style>
+<style>
+/* ---------- DuoFit · Modernes visuelles Refresh (nur CSS) ---------- */
+:root{
+  --bg:#090e14;
+  --bg-elevated:#141c27;
+  --ink:#f4f7fb;
+  --ink-soft:#9aa8ba;
+  --line:rgba(208,222,242,.095);
+  --nutrition:#ffbd66;
+  --nutrition-soft:rgba(255,189,102,.13);
+  --training:#71e2bf;
+  --training-soft:rgba(113,226,191,.13);
+  --danger:#ff9289;
+  --radius:22px;
+  color-scheme:dark;
+}
+html,body{background:var(--bg);}
+body{
+  background:
+    radial-gradient(ellipse at 8% -8%,rgba(78,190,164,.13),transparent 34%),
+    radial-gradient(ellipse at 100% 0%,rgba(92,123,208,.12),transparent 30%),
+    linear-gradient(180deg,#0a1017 0%,#0d141e 58%,#0a1017 100%);
+  letter-spacing:-.012em;
+}
+#app{max-width:600px;padding-bottom:calc(108px + env(safe-area-inset-bottom));}
+.topbar{
+  padding:calc(17px + env(safe-area-inset-top)) 18px 12px;
+  background:linear-gradient(180deg,rgba(9,14,20,.96),rgba(9,14,20,.72),transparent);
+  backdrop-filter:blur(22px) saturate(150%);
+}
+.profile-switch{
+  padding:4px;background:rgba(24,33,46,.9);border-color:rgba(210,225,245,.12);
+  box-shadow:0 8px 28px rgba(0,0,0,.2),inset 0 1px rgba(255,255,255,.035);
+}
+.profile-btn{padding:9px 15px;font-size:13px;letter-spacing:0;}
+.profile-btn.active{background:#f2f5f8;color:#111923;box-shadow:0 3px 12px rgba(0,0,0,.22);}
+main{padding:10px 17px 38px;}
+.view-head{margin:15px 3px 20px;}
+.view-head h2{font-size:28px;letter-spacing:-.045em;}
+.view-sub{font-size:13px;line-height:1.45;margin-top:8px;}
+.dash-hero{
+  position:relative;isolation:isolate;overflow:hidden;
+  padding:21px 20px 22px;margin:8px 0 14px;
+  border:1px solid rgba(133,221,194,.17);border-radius:25px;
+  background:linear-gradient(135deg,rgba(35,91,81,.42),rgba(22,32,43,.92) 58%,rgba(20,28,41,.96));
+  box-shadow:0 16px 36px rgba(0,0,0,.2),inset 0 1px rgba(255,255,255,.055);
+}
+.dash-hero:after{
+  content:"";position:absolute;z-index:-1;width:190px;height:190px;right:-80px;top:-110px;
+  border-radius:50%;background:rgba(112,226,191,.13);filter:blur(8px);
+}
+.dash-eyebrow{font-size:11px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:#aab9c7;margin-bottom:8px;}
+.dash-title{font-size:27px;line-height:1.1;font-weight:750;letter-spacing:-.055em;}
+.dash-sub{font-size:13px;line-height:1.45;color:#a6b4c3;margin-top:8px;}
+.dash-grid{gap:11px;margin-bottom:14px;}
+.dash-card,.plan-card,.settings-block,.profile-goal-card{
+  border:1px solid var(--line);border-radius:21px;
+  background:linear-gradient(155deg,rgba(25,34,47,.96),rgba(17,24,34,.98));
+  box-shadow:0 10px 28px rgba(0,0,0,.16),inset 0 1px rgba(255,255,255,.035);
+}
+.dash-card{padding:16px;}
+.dash-card.full{padding:17px;}
+.dash-label{font-size:11px;font-weight:650;letter-spacing:.075em;text-transform:uppercase;color:#9eacbd;margin-bottom:8px;}
+.dash-value{font-size:25px;font-weight:750;letter-spacing:-.045em;line-height:1.1;font-variant-numeric:tabular-nums;}
+.dash-small{font-size:12px;line-height:1.45;color:#9aa8ba;margin-top:7px;}
+.macro-row{margin-top:13px;}
+.macro-head{font-size:12px;margin-bottom:7px;color:#aab6c5;}
+.macro-track{height:7px;background:rgba(255,255,255,.075);border:0;border-radius:99px;}
+.macro-fill{border-radius:99px;box-shadow:0 0 12px currentColor;}
+.dash-action,.food-search-btn,.manual-product-btn,.barcode-btn,.copy-week-btn{
+  min-height:44px;border-radius:14px;font-size:13px;font-weight:700;letter-spacing:-.01em;
+  transition:transform .16s ease,filter .16s ease,background .16s ease;
+}
+.dash-action{
+  margin-top:14px;padding:12px 14px;color:#9aefd2;
+  border:1px solid rgba(113,226,191,.27);
+  background:linear-gradient(110deg,rgba(54,139,117,.22),rgba(113,226,191,.08));
+  box-shadow:inset 0 1px rgba(255,255,255,.04);
+}
+.dash-action:active,.food-search-btn:active,.manual-product-btn:active,.barcode-btn:active,.copy-week-btn:active{transform:scale(.985);}
+.water-card,.week-card,.weight-chart-card{
+  padding:15px;border-radius:17px;background:rgba(7,12,19,.28);
+  border:1px solid rgba(205,220,240,.08);
+}
+.water-value{font-size:27px;font-weight:750;letter-spacing:-.045em;}
+.water-progress{height:8px;border-radius:99px;background:rgba(255,255,255,.08);overflow:hidden;}
+.water-progress>div{border-radius:99px;}
+.water-actions{gap:9px;margin-top:12px;}
+.water-actions button{
+  min-height:43px;border-radius:13px;border:1px solid rgba(115,165,225,.25);
+  background:rgba(100,145,204,.12);color:#b5d5ff;font-size:13px;font-weight:750;
+}
+.week-title,.weight-chart-title{font-size:15px;font-weight:750;letter-spacing:-.025em;}
+.week-score{border-radius:99px;padding:6px 10px;background:rgba(113,226,191,.1);color:#91e8ca;font-size:10px;font-weight:750;}
+.week-grid{gap:8px;margin-top:14px;}
+.week-stat{padding:11px;border-radius:13px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.045);}
+.week-stat span{font-size:10px;color:#9aa8ba;}
+.week-stat strong{font-size:15px;letter-spacing:-.025em;}
+.weight-quick input,.mini-form input,.exercise-fields input,.goal-grid input,.goal-grid select,
+.set-row input,.barcode-manual-form input,.custom-food-grid input,.amount-row input,
+.food-search-form input,.weight-quick button,.settings-row button{
+  border-radius:13px;
+}
+input,select,textarea{accent-color:#71e2bf;}
+input:focus,select:focus,textarea:focus{outline:none;}
+.plan-card{margin-bottom:13px;overflow:hidden;}
+.plan-card-head{padding:17px 18px;}
+.plan-card-head h3{font-size:16px;letter-spacing:-.025em;}
+.plan-card-body{padding:0 17px 17px;background:rgba(5,9,15,.17);}
+.plan-card.open .plan-card-body{padding-top:15px;}
+.meal-group,.exercise-row,.exercise-card{
+  border-radius:16px;background:rgba(255,255,255,.035);border-color:rgba(205,220,240,.085);
+}
+.meal-group{padding:14px;}
+.meal-group-title{font-size:10px;letter-spacing:.1em;}
+.item-row{font-size:13px;padding:11px 0;border-bottom-color:rgba(255,255,255,.07);}
+.item-name,.exercise-name{letter-spacing:-.015em;}
+.day-type-switch{gap:8px;}
+.day-type-btn{border-radius:13px;min-height:42px;background:rgba(255,255,255,.045);}
+.day-type-btn.active{background:linear-gradient(135deg,#71e2bf,#a0efd4);color:#0a1713;box-shadow:0 7px 20px rgba(113,226,191,.13);}
+.settings-block,.profile-goal-card{padding:18px;margin-bottom:13px;}
+.settings-block h3,.profile-goal-card h3{font-size:16px;letter-spacing:-.025em;}
+.settings-block p,.profile-goal-card p{font-size:13px;line-height:1.6;}
+.goal-stat{border-radius:14px;background:rgba(255,255,255,.04);}
+.btn-secondary,.btn-danger,.mini-form button,.food-search-form button,.food-actions button,.custom-save,.password-card button{
+  min-height:42px;border-radius:13px;font-weight:750;transition:transform .16s ease,filter .16s ease;
+}
+.btn-secondary{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.1);}
+.btn-danger{background:rgba(255,117,109,.09);}
+.tabbar{
+  bottom:calc(12px + env(safe-area-inset-bottom));width:calc(100% - 28px);max-width:572px;
+  padding:6px;border-radius:22px;background:rgba(18,26,37,.88);
+  border:1px solid rgba(210,225,245,.11);backdrop-filter:blur(24px) saturate(160%);
+  box-shadow:0 18px 48px rgba(0,0,0,.46),inset 0 1px rgba(255,255,255,.045);
+}
+.tab-btn{padding:10px 4px 9px;gap:5px;border-radius:16px;font-size:11px;color:#94a1b2;}
+.tab-btn.active{color:#f5f8fb;background:linear-gradient(180deg,rgba(255,255,255,.105),rgba(255,255,255,.055));}
+.tab-dot{width:5px;height:5px;}
+.tab-btn.active .tab-dot{background:#71e2bf;box-shadow:0 0 12px rgba(113,226,191,.8);}
+.toast{border-radius:14px;padding:12px 17px;box-shadow:0 12px 32px rgba(0,0,0,.4);}
+.food-sheet{background:#121b27;border-color:rgba(210,225,245,.12);border-radius:26px 26px 0 0;}
+.food-result,.food-selected{border-radius:15px;background:rgba(255,255,255,.045);border-color:rgba(210,225,245,.09);}
+.food-modal{background:rgba(2,6,11,.7);backdrop-filter:blur(12px);}
+.password-card{background:linear-gradient(155deg,#1b2938,#111a26);border-color:rgba(210,225,245,.13);}
+.password-card input{border-radius:13px;}
+@media(max-width:390px){
+  #app{padding-bottom:calc(104px + env(safe-area-inset-bottom));}
+  main{padding-left:14px;padding-right:14px;}
+  .dash-hero{padding:19px 17px;border-radius:22px;}
+  .dash-title{font-size:25px;}
+  .dash-card{padding:13px;}
+  .dash-value{font-size:22px;}
+  .tabbar{width:calc(100% - 20px);}
+  .tab-btn{font-size:10px;}
+}
+@media(prefers-reduced-motion:no-preference){
+  .dash-card,.plan-card,.settings-block,.profile-goal-card{transition:border-color .2s ease,transform .2s ease,box-shadow .2s ease;}
+  .dash-card:active{border-color:rgba(113,226,191,.2);}
+}
+
+</style>
 </head>
 <body class="app-locked">
 
