@@ -1762,6 +1762,316 @@ input:focus,select:focus,textarea:focus{outline:none;}
 }
 
 </style>
+<style>
+/* ==========================================================
+   DuoFit Premium · rein visuelles Design-Update (CSS only)
+   Bestehende HTML-Struktur, IDs, Daten und JavaScript bleiben
+   unverändert. Diese Regeln überschreiben ausschließlich Optik.
+   ========================================================== */
+:root{
+  --bg:#080d12;
+  --bg-elevated:#121b24;
+  --ink:#f4f6f4;
+  --ink-soft:#9ba9a7;
+  --line:rgba(210,228,220,.085);
+  --nutrition:#e9bd78;
+  --nutrition-soft:rgba(233,189,120,.13);
+  --training:#83d9b8;
+  --training-soft:rgba(131,217,184,.13);
+  --danger:#ef938b;
+  --radius:22px;
+  color-scheme:dark;
+}
+html,body{background:var(--bg);}
+body{
+  color:var(--ink);
+  background:
+    radial-gradient(ellipse at 4% -8%,rgba(82,153,126,.15),transparent 34%),
+    radial-gradient(ellipse at 100% 4%,rgba(166,135,91,.075),transparent 29%),
+    linear-gradient(180deg,#090f14 0%,#0d151b 52%,#090f14 100%);
+  font-family:'IBM Plex Sans',-apple-system,BlinkMacSystemFont,sans-serif;
+  letter-spacing:-.012em;
+}
+#app{max-width:600px;padding-bottom:calc(112px + env(safe-area-inset-bottom));}
+h1,h2,h3,h4{letter-spacing:-.035em;}
+button,input,select,textarea{font:inherit;}
+button{transition:background .18s ease,border-color .18s ease,color .18s ease,transform .18s ease,box-shadow .18s ease;}
+button:active{transform:scale(.985);}
+:focus-visible{outline:2px solid rgba(131,217,184,.75);outline-offset:3px;}
+::selection{background:rgba(131,217,184,.28);color:#fff;}
+
+/* Kopfbereich & Profil */
+.topbar{
+  padding:calc(17px + env(safe-area-inset-top)) 18px 13px;
+  background:linear-gradient(180deg,rgba(8,13,18,.97),rgba(8,13,18,.78),transparent);
+  backdrop-filter:blur(24px) saturate(145%);
+  -webkit-backdrop-filter:blur(24px) saturate(145%);
+}
+.brand-mark{
+  border-radius:14px;
+  background:
+    radial-gradient(circle at 11px 19px,#83d9b8 0 4px,transparent 4.4px),
+    radial-gradient(circle at 27px 19px,#d9bd8b 0 4px,transparent 4.4px),
+    linear-gradient(90deg,transparent 0 13px,rgba(255,255,255,.18) 13px 25px,transparent 25px),
+    linear-gradient(145deg,#1c302b,#111b22);
+  border:1px solid rgba(196,225,210,.13);
+  box-shadow:0 10px 26px rgba(0,0,0,.28),inset 0 1px rgba(255,255,255,.08);
+}
+.brand h1{font-size:22px;letter-spacing:-.055em;}
+.profile-switch{
+  padding:4px;border-radius:999px;
+  background:rgba(24,34,40,.88);
+  border:1px solid rgba(210,228,220,.12);
+  box-shadow:0 9px 28px rgba(0,0,0,.2),inset 0 1px rgba(255,255,255,.035);
+}
+.profile-btn{padding:9px 15px;font-size:13px;letter-spacing:0;}
+.profile-btn.active{background:linear-gradient(135deg,#f4f5f0,#e1e8e1);color:#142019;box-shadow:0 4px 13px rgba(0,0,0,.24);}
+main{padding:10px 17px 40px;}
+.view-head{margin:16px 3px 20px;}
+.view-head h2{font-size:29px;line-height:1.06;letter-spacing:-.055em;}
+.view-sub{font-size:13px;line-height:1.5;margin-top:8px;color:#9ba9a7;}
+
+/* Gemeinsame Kartenoberfläche */
+.dash-card,.plan-card,.settings-block,.profile-goal-card,.exercise-card,.weight-chart-card,.week-card{
+  border:1px solid var(--line);
+  border-radius:21px;
+  background:linear-gradient(150deg,rgba(25,37,42,.97),rgba(16,25,31,.985));
+  box-shadow:0 12px 30px rgba(0,0,0,.17),inset 0 1px rgba(255,255,255,.035);
+}
+.dash-card{padding:16px;}
+.dash-grid{gap:11px;margin-bottom:14px;}
+.dash-label{font-size:10.5px;font-weight:700;letter-spacing:.085em;text-transform:uppercase;color:#a3b0aa;margin-bottom:8px;}
+.dash-value{font-size:26px;font-weight:750;letter-spacing:-.05em;line-height:1.08;font-variant-numeric:tabular-nums;}
+.dash-small{font-size:12px;line-height:1.5;color:#9ba9a7;margin-top:7px;}
+.dash-hero{
+  position:relative;isolation:isolate;overflow:hidden;
+  padding:22px 20px 23px;margin:8px 0 14px;
+  border:1px solid rgba(131,217,184,.19);border-radius:25px;
+  background:linear-gradient(132deg,rgba(35,83,68,.56),rgba(24,39,39,.94) 56%,rgba(19,29,34,.98));
+  box-shadow:0 18px 42px rgba(0,0,0,.23),inset 0 1px rgba(255,255,255,.065);
+}
+.dash-hero:after{
+  content:"";position:absolute;z-index:-1;width:220px;height:220px;right:-105px;top:-132px;
+  border-radius:50%;background:rgba(161,199,164,.16);filter:blur(10px);
+}
+.dash-eyebrow{font-size:10.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#b3c5ba;margin-bottom:9px;}
+.dash-title{font-size:28px;line-height:1.08;font-weight:750;letter-spacing:-.06em;}
+.dash-sub{font-size:13px;line-height:1.5;color:#b0bdb6;margin-top:8px;}
+.today-badge{border-radius:999px;color:#a7e6c9;background:rgba(131,217,184,.11);border:1px solid rgba(131,217,184,.23);}
+
+/* Makros, Wasser, Wochenübersicht & Diagramme */
+.macro-row{margin-top:14px;}
+.macro-head{font-size:11.5px;margin-bottom:7px;color:#aab6b0;}
+.macro-track{height:7px;background:rgba(255,255,255,.075);border:0;border-radius:99px;}
+.macro-fill{border-radius:99px;box-shadow:0 0 11px currentColor;}
+.macro-protein{color:#83d9b8;}.macro-carbs{color:#e9bd78;}.macro-fat{color:#c6a5d8;}.macro-kcal{color:#9dbde0;}
+.water-card,.week-card,.weight-chart-card{padding:16px;border-radius:19px;background:linear-gradient(150deg,rgba(24,36,40,.9),rgba(15,24,30,.94));border:1px solid rgba(210,228,220,.09);}
+.water-value{font-size:28px;font-weight:750;letter-spacing:-.05em;}
+.water-progress{height:8px;border-radius:99px;background:rgba(255,255,255,.08);overflow:hidden;}
+.water-progress>div{border-radius:99px;}
+.water-actions{gap:9px;margin-top:13px;}
+.water-actions button{min-height:44px;border-radius:13px;border:1px solid rgba(137,177,206,.22);background:rgba(109,148,174,.11);color:#c0d6e7;font-size:13px;font-weight:750;}
+.week-card-head{align-items:center;}
+.week-title,.weight-chart-title{font-size:15px;font-weight:750;letter-spacing:-.03em;}
+.week-range{font-size:10.5px;color:var(--ink-soft);margin-top:4px;}
+.week-score{border-radius:99px;padding:6px 10px;background:rgba(131,217,184,.11);color:#a1e6c7;font-size:10px;font-weight:750;}
+.week-grid{gap:8px;margin-top:14px;}
+.week-stat{padding:11px;border-radius:13px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.055);}
+.week-stat span{font-size:10px;color:#a0ada7;}
+.week-stat strong{font-size:15px;letter-spacing:-.025em;}
+.week-day{border-radius:11px;background:rgba(255,255,255,.025);border-color:rgba(255,255,255,.055);}
+.week-day.today{border-color:rgba(131,217,184,.3);background:rgba(131,217,184,.065);}
+.week-day.good .wd-dot{background:#83d9b8;box-shadow:0 0 9px rgba(131,217,184,.35);}
+.week-day.partial .wd-dot{background:#e9bd78;}
+.week-feedback{border-radius:12px;background:rgba(255,255,255,.03);border-color:rgba(255,255,255,.055);line-height:1.55;}
+.weight-chart-card{padding:16px;}
+.weight-chart-head{gap:10px;margin-bottom:12px;}
+.weight-chart-title{font-size:14px;}
+.weight-chart-tab{border-radius:999px;padding:6px 10px;background:rgba(255,255,255,.035);border-color:var(--line);color:#aab6b0;}
+.weight-chart-tab.active{background:rgba(131,217,184,.13);border-color:rgba(131,217,184,.28);color:#a8e8cb;}
+.weight-chart-wrap{border-radius:14px;overflow:hidden;}
+.weight-chart-stat{border-radius:12px;background:rgba(255,255,255,.035);padding:10px;}
+.weight-chart-stat span{color:var(--ink-soft);}
+.weight-chart-stat strong{font-size:14px;}
+
+/* Training & Übungs-Tracking */
+.plan-card{margin-bottom:14px;overflow:hidden;}
+.plan-card-head{padding:17px 18px;}
+.plan-card-head h3{font-size:16px;letter-spacing:-.03em;}
+.plan-card-head .chip{font-size:10px;letter-spacing:.045em;padding:5px 10px;}
+.chip.training{background:rgba(131,217,184,.13);color:#a1e6c7;}
+.chip.nutrition{background:rgba(233,189,120,.13);color:#edca91;}
+.chevron{border-color:#9aa9a1;}
+.plan-card-body{padding:0 17px 17px;background:rgba(5,10,13,.2);border-top-color:rgba(210,228,220,.075);}
+.plan-card.open .plan-card-body{padding-top:15px;}
+.day-type-switch{gap:8px;margin-bottom:15px;}
+.day-type-btn{min-height:43px;border-radius:13px;background:rgba(255,255,255,.04);border-color:rgba(210,228,220,.09);color:#a7b3ad;font-size:11.5px;}
+.day-type-btn.active{background:linear-gradient(135deg,#83d9b8,#b0e6c9);color:#102019;box-shadow:0 8px 20px rgba(131,217,184,.14);}
+.day-type-btn.active.rest{background:linear-gradient(135deg,#f0f2ed,#dfe6df);color:#1b2420;}
+.rest-note{line-height:1.55;}
+.exercise-row,.exercise-card{padding:14px;border-radius:17px;background:linear-gradient(145deg,rgba(255,255,255,.045),rgba(255,255,255,.02));border-color:rgba(210,228,220,.085);}
+.exercise-row{margin-bottom:11px;}
+.exercise-top{margin-bottom:11px;}
+.exercise-name{font-size:14px;font-weight:750;letter-spacing:-.025em;}
+.exercise-history-hint{font-size:10.5px;line-height:1.5;color:#9ba9a7;}
+.exercise-fields{gap:9px;}
+.exercise-fields label,.set-row label{font-size:10px;color:#a2afa9;gap:5px;}
+.set-count-row{font-size:11px;color:#a2afa9;}
+.set-row{padding:9px;border-radius:12px;background:rgba(255,255,255,.028);border-color:rgba(210,228,220,.065);}
+.set-row.done{background:rgba(131,217,184,.07);border-color:rgba(131,217,184,.25);}
+.set-number{color:#b1bdb6;}
+.set-done-btn{border-radius:10px;background:rgba(255,255,255,.045);}
+.set-row.done .set-done-btn{background:#83d9b8;border-color:#83d9b8;color:#102019;}
+.training-complete-btn{border-radius:14px;background:linear-gradient(135deg,#83d9b8,#a9e5c8);color:#102019;box-shadow:0 8px 22px rgba(131,217,184,.13);}
+.training-day-history{border-radius:15px;background:rgba(255,255,255,.025);border-color:rgba(210,228,220,.07);}
+.training-day-history h4{font-size:14px;}
+.history-session{padding:10px 0;border-color:rgba(255,255,255,.07);font-size:12px;}
+.exercise-progress{border-radius:12px;}
+.exercise-add-form{gap:8px;}
+.exercise-add-form input{border-radius:12px;}
+.exercise-add-form button,.copy-training-btn{border-radius:12px;}
+
+/* Ernährung & Lebensmittel */
+.meal-group{margin-bottom:13px;padding:14px;border-radius:17px;background:rgba(255,255,255,.032);border:1px solid rgba(210,228,220,.075);}
+.meal-group-title{font-size:10px;letter-spacing:.11em;color:#edca91;}
+.meal-headline{margin-bottom:9px;}
+.meal-kcal{font-size:11px;color:#aeb9b1;}
+.item-row{padding:11px 0;font-size:13px;border-bottom-color:rgba(255,255,255,.065);}
+.item-name{font-weight:700;letter-spacing:-.02em;}
+.item-meta{font-size:11px;color:#9ba9a7;line-height:1.4;}
+.item-remove{background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.06);}
+.nutrition-summary{gap:8px;}
+.nutrition-stat{padding:11px 8px;border-radius:14px;background:rgba(255,255,255,.035);border-color:rgba(210,228,220,.075);}
+.nutrition-stat strong{font-size:14px;}
+.nutrition-stat span{font-size:9px;letter-spacing:.07em;}
+.nutrition-stat.kcal strong{color:#edca91;}
+.macro-line{font-size:10.5px;}
+.macro-line .kcal{color:#edca91;}
+.quick-food-section{padding:13px;border-radius:16px;background:rgba(255,255,255,.025);border-color:rgba(210,228,220,.07);}
+.quick-food-title{font-size:11px;font-weight:750;letter-spacing:.04em;color:#aeb9b1;}
+.quick-food-chip{border-radius:13px;background:rgba(255,255,255,.045);border-color:rgba(210,228,220,.08);padding:10px 12px;}
+.quick-food-chip strong{font-size:11.5px;}
+.quick-food-chip span{font-size:10px;}
+.favorite-btn,.meal-save-btn,.saved-meal-remove,.favorite-chip-remove{border-radius:10px;}
+.favorite-btn.active{background:rgba(233,189,120,.13);color:#edca91;border-color:rgba(233,189,120,.23);}
+.meal-quick-actions{gap:8px;}
+.meal-save-btn{background:rgba(131,217,184,.1);border-color:rgba(131,217,184,.22);color:#a5e6c9;}
+.food-result{border-radius:15px;background:rgba(255,255,255,.04);border-color:rgba(210,228,220,.08);padding:13px;}
+.food-result-name{font-size:13.5px;}
+.food-result-brand{font-size:11px;color:#9ba9a7;}
+.food-result-macros{font-size:11px;color:#aeb9b1;}
+.food-result-macros strong{color:#edca91;}
+.food-result-star.active{color:#edca91;}
+.food-search-btn,.manual-product-btn{border-radius:14px;background:rgba(131,217,184,.09);border-color:rgba(131,217,184,.23);color:#a5e6c9;}
+.barcode-btn{border-radius:14px;background:rgba(131,217,184,.1);border-color:rgba(131,217,184,.23);color:#a5e6c9;}
+.barcode-btn.secondary{background:rgba(255,255,255,.04);color:#dce4df;border-color:var(--line);}
+.barcode-panel{border-radius:17px;background:rgba(255,255,255,.025);border-color:var(--line);}
+.custom-food-form{border-radius:17px;background:rgba(233,189,120,.045);border-color:rgba(233,189,120,.17);}
+.custom-food-form h4{font-size:15px;}
+.custom-food-form p{line-height:1.55;}
+.custom-save{border-radius:13px;background:linear-gradient(135deg,#83d9b8,#a9e5c8);color:#102019;}
+.manual-kcal-preview{border-radius:13px;background:rgba(255,255,255,.04);border-color:var(--line);}
+
+/* Formulare, Eingaben & Aktionen */
+input,select,textarea{accent-color:#83d9b8;}
+.mini-form input,.exercise-fields input,.goal-grid input,.goal-grid select,.set-row input,
+.barcode-manual-form input,.custom-food-grid input,.amount-row input,.food-search-form input,
+.weight-quick input,.copy-own-day-row select,.password-card input{
+  border:1px solid rgba(210,228,220,.11);background:rgba(7,13,17,.72);color:var(--ink);
+  border-radius:12px;box-shadow:inset 0 1px 2px rgba(0,0,0,.12);
+}
+.mini-form input:focus,.exercise-fields input:focus,.goal-grid input:focus,.goal-grid select:focus,
+.set-row input:focus,.barcode-manual-form input:focus,.custom-food-grid input:focus,
+.amount-row input:focus,.food-search-form input:focus,.weight-quick input:focus,
+.copy-own-day-row select:focus,.password-card input:focus{
+  border-color:rgba(131,217,184,.48);box-shadow:0 0 0 3px rgba(131,217,184,.09);
+}
+input::placeholder,textarea::placeholder{color:#687a73;}
+.btn-secondary,.manage-actions button,.copy-own-day-row button{
+  border-radius:12px;background:rgba(255,255,255,.045);border-color:rgba(210,228,220,.1);color:#e2e9e4;
+}
+.btn-danger{border-radius:12px;background:rgba(239,147,139,.08);border-color:rgba(239,147,139,.23);color:#f0aaa3;}
+.mini-form button,.food-search-form button,.food-actions button,.manual-form-actions button{
+  border-radius:12px;font-weight:750;
+}
+.weight-quick{gap:9px;}
+.weight-quick button{border-radius:12px;background:linear-gradient(135deg,#83d9b8,#a9e5c8);color:#102019;}
+.dash-action{min-height:45px;margin-top:14px;padding:12px 14px;border-radius:14px;border:1px solid rgba(131,217,184,.25);background:linear-gradient(110deg,rgba(52,120,94,.22),rgba(131,217,184,.075));color:#a5e6c9;font-size:13px;font-weight:750;box-shadow:inset 0 1px rgba(255,255,255,.04);}
+
+/* Einstellungen, Profil, Ziel & Verwaltung */
+.settings-block,.profile-goal-card{padding:18px;margin-bottom:14px;}
+.settings-block h3,.profile-goal-card h3{font-size:16px;letter-spacing:-.03em;margin-bottom:8px;}
+.settings-block p,.profile-goal-card p{font-size:13px;line-height:1.6;color:#a2afa9;}
+.settings-row{gap:9px;}
+.goal-grid{gap:10px;}
+.goal-grid label{font-size:11px;color:#a6b2ac;gap:6px;}
+.goal-stat{border-radius:15px;background:rgba(255,255,255,.035);border-color:rgba(210,228,220,.075);}
+.goal-stat .label{color:#9ba9a7;}
+.goal-stat .value{font-size:18px;letter-spacing:-.03em;}
+.goal-note{font-size:11.5px;line-height:1.6;color:#9ba9a7;}
+.manage-section{margin-top:13px;padding:13px;border-radius:16px;background:rgba(255,255,255,.025);border-color:rgba(210,228,220,.075);}
+.manage-title{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:#a4b0aa;}
+.manage-row{padding:10px;border-radius:12px;background:rgba(255,255,255,.025);border-color:rgba(210,228,220,.065);}
+.manage-row-main strong{font-size:12px;}
+.manage-row-main span{font-size:10px;color:#9ba9a7;}
+.manage-actions button{padding:8px 9px;font-size:10px;}
+.manage-actions .danger{color:#efa49d;border-color:rgba(239,147,139,.2);background:rgba(239,147,139,.055);}
+.copy-own-day-wrap{padding:11px;border-radius:13px;background:rgba(255,255,255,.025);border-color:rgba(210,228,220,.07);}
+.copy-own-day-wrap label{font-size:10.5px;color:#a4b0aa;}
+.copy-week-btn{min-height:44px;border-radius:13px;background:rgba(130,167,199,.09);border-color:rgba(130,167,199,.22);color:#c1d6e5;}
+
+/* Navigation & Overlays */
+.tabbar{
+  bottom:calc(12px + env(safe-area-inset-bottom));width:calc(100% - 28px);max-width:572px;
+  padding:6px;border-radius:22px;background:rgba(17,27,32,.88);
+  border:1px solid rgba(210,228,220,.12);backdrop-filter:blur(26px) saturate(165%);
+  -webkit-backdrop-filter:blur(26px) saturate(165%);
+  box-shadow:0 20px 48px rgba(0,0,0,.46),inset 0 1px rgba(255,255,255,.05);
+}
+.tab-btn{padding:10px 4px 9px;gap:5px;border-radius:16px;font-size:11px;color:#92a19a;}
+.tab-btn.active{color:#f5f8f5;background:linear-gradient(180deg,rgba(255,255,255,.105),rgba(255,255,255,.045));}
+.tab-dot{width:5px;height:5px;}
+.tab-btn.active .tab-dot{background:#83d9b8;box-shadow:0 0 12px rgba(131,217,184,.8);}
+.toast{border-radius:14px;padding:12px 17px;box-shadow:0 14px 34px rgba(0,0,0,.42);}
+.food-modal{background:rgba(2,7,9,.72);backdrop-filter:blur(13px);-webkit-backdrop-filter:blur(13px);}
+.food-sheet{background:linear-gradient(160deg,#18252a,#101a20);border-color:rgba(210,228,220,.12);border-radius:26px 26px 0 0;}
+.food-sheet-head h3{font-size:20px;letter-spacing:-.04em;}
+.food-close{border-radius:50%;background:rgba(255,255,255,.055);}
+.food-help{line-height:1.55;}
+.food-selected{border-radius:16px;background:rgba(255,255,255,.04);border-color:rgba(210,228,220,.09);}
+.selected-preview{border-radius:13px;background:rgba(233,189,120,.07);border-color:rgba(233,189,120,.15);}
+.selected-preview strong{color:#edca91;}
+.food-add{background:linear-gradient(135deg,#83d9b8,#a9e5c8);color:#102019;}
+.password-gate{background:radial-gradient(ellipse at 18% 8%,rgba(82,153,126,.17),transparent 32%),radial-gradient(ellipse at 88% 5%,rgba(166,135,91,.08),transparent 28%),#090f14;}
+.password-card{padding:28px 23px 23px;border-radius:26px;background:linear-gradient(155deg,#1b2a2d,#111b21);border-color:rgba(210,228,220,.13);box-shadow:0 28px 80px rgba(0,0,0,.48),inset 0 1px rgba(255,255,255,.055);}
+.password-card h2{font-size:27px;letter-spacing:-.05em;}
+.password-card p{line-height:1.6;color:#a8b5ae;}
+.password-card button{min-height:46px;border-radius:13px;background:linear-gradient(135deg,#83d9b8,#b2e7cc);color:#102019;}
+.password-error{color:#efa49d;}
+
+/* Responsive Feinschliff */
+@media(max-width:390px){
+  #app{padding-bottom:calc(108px + env(safe-area-inset-bottom));}
+  main{padding-left:14px;padding-right:14px;}
+  .topbar{padding-left:14px;padding-right:14px;}
+  .dash-hero{padding:19px 17px;border-radius:22px;}
+  .dash-title{font-size:25px;}
+  .dash-card{padding:13px;}
+  .dash-value{font-size:22px;}
+  .tabbar{width:calc(100% - 20px);}
+  .tab-btn{font-size:10px;}
+  .plan-card-head{padding:15px 15px;}
+  .plan-card-body{padding-left:14px;padding-right:14px;}
+}
+@media(prefers-reduced-motion:no-preference){
+  .dash-card,.plan-card,.settings-block,.profile-goal-card,.exercise-card,.week-card,.weight-chart-card{
+    transition:border-color .2s ease,box-shadow .2s ease,transform .2s ease;
+  }
+  .dash-card:active{border-color:rgba(131,217,184,.2);}
+}
+@media(prefers-reduced-motion:reduce){button{transition:none!important;}}
+
+</style>
 </head>
 <body class="app-locked">
 
